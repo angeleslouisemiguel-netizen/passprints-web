@@ -293,10 +293,142 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+  /* ── RECEIPT BUILDER ── */
+  .receipt-layout {
+    display: grid;
+    grid-template-columns: 1fr 440px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .receipt-layout { grid-template-columns: 1fr; }
+  }
+  .receipt-form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .receipt-form-card h3 {
+    font-size: 15px; font-weight: 700; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .item-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 90px 90px 32px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .item-row .form-input { padding: 7px 10px; font-size: 12px; }
+  .del-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: rgba(248,113,113,.15); border: none;
+    color: var(--red); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .del-btn:hover { background: rgba(248,113,113,.3); }
+  .add-item-btn {
+    width: 100%; padding: 9px; border-radius: 8px; font-size: 13px;
+    border: 1px dashed var(--border); background: none;
+    color: var(--muted); cursor: pointer; margin-top: 8px;
+    transition: all .15s;
+  }
+  .add-item-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── RECEIPT PREVIEW (screen) ── */
+  .receipt-preview-wrap {
+    position: sticky; top: 80px;
+  }
+  .receipt-preview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .preview-toolbar {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .preview-toolbar span { font-size: 13px; font-weight: 600; }
+  .print-btn {
+    padding: 7px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: opacity .15s;
+  }
+  .print-btn:hover { opacity: .85; }
+
+  /* ── THE ACTUAL RECEIPT (what prints) ── */
+  #receiptDoc {
+    padding: 32px;
+    background: #fff;
+    color: #111;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 400px;
+  }
+  .rc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+  .rc-brand { font-size: 22px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; }
+  .rc-brand span { color: #4f6ef7; }
+  .rc-tagline { font-size: 11px; color: #888; margin-top: 2px; }
+  .rc-meta { text-align: right; font-size: 12px; color: #555; line-height: 1.7; }
+  .rc-meta strong { color: #111; }
+  .rc-divider { height: 2px; background: #1a1a2e; margin: 0 0 20px; border-radius: 2px; }
+  .rc-divider-thin { height: 1px; background: #e5e7eb; margin: 12px 0; }
+  .rc-to { margin-bottom: 20px; }
+  .rc-to-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+  .rc-to-name { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+  .rc-to-sub { font-size: 12px; color: #666; margin-top: 2px; }
+  .rc-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  .rc-table th {
+    text-align: left; padding: 8px 10px;
+    background: #f3f4f6; color: #555;
+    font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .rc-table th:last-child, .rc-table td:last-child { text-align: right; }
+  .rc-table th:nth-child(2),
+  .rc-table td:nth-child(2),
+  .rc-table th:nth-child(3),
+  .rc-table td:nth-child(3) { text-align: center; }
+  .rc-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; color: #333; }
+  .rc-totals { margin-left: auto; width: 220px; }
+  .rc-total-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; color: #555; }
+  .rc-total-row.grand { font-size: 16px; font-weight: 800; color: #1a1a2e; padding-top: 8px; }
+  .rc-total-row.grand span:last-child { color: #4f6ef7; }
+  .rc-footer { margin-top: 28px; padding-top: 16px; border-top: 1px dashed #ddd; display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+  .rc-payment { margin-top: 20px; background: #f8f9ff; border: 1px solid #e0e4ff; border-radius: 8px; padding: 14px 16px; }
+  .rc-payment-title { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #4f6ef7; margin-bottom: 8px; }
+  .rc-payment-row { display: flex; gap: 24px; font-size: 12px; color: #444; flex-wrap: wrap; }
+  .rc-payment-item strong { color: #1a1a2e; }
+  .rc-note { margin-top: 16px; font-size: 12px; color: #666; font-style: italic; }
+  .rc-stamp {
+    display: inline-block; border: 3px solid #4f6ef7; color: #4f6ef7;
+    border-radius: 8px; padding: 4px 12px; font-size: 13px; font-weight: 800;
+    letter-spacing: 1px; transform: rotate(-8deg); margin-top: 4px;
+    opacity: .85;
+  }
+
+  /* ── PRINT STYLES ── */
+  @media print {
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block !important; }
+    #receiptDoc {
+      padding: 20mm 18mm;
+      font-size: 12pt;
+      color: #000;
+    }
+    .rc-brand { font-size: 20pt; }
+    .rc-to-name { font-size: 16pt; }
+    .rc-table { font-size: 11pt; }
+  }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 640px) {
     .nav-tabs { display: none; }
     .stats-row { grid-template-columns: 1fr 1fr; }
+    .item-row { grid-template-columns: 1fr 60px 70px 70px 28px; gap: 4px; }
   }
 </style>
 </head>
@@ -312,6 +444,7 @@
     <button class="nav-tab" onclick="switchTab('signage')">🪧 Signage</button>
     <button class="nav-tab" onclick="switchTab('expenses')">💸 Expenses</button>
     <button class="nav-tab" onclick="switchTab('sheets')">📗 Sheets</button>
+    <button class="nav-tab" onclick="switchTab('receipt')">🧾 Receipt</button>
   </div>
 
   <!-- ACCOUNT CIRCLE -->
@@ -497,52 +630,84 @@
 
   <!-- ══ SHEETS TAB ══ -->
   <div class="tab-content" id="tab-sheets">
-    <div class="connect-box" id="sheetsSetupBox">
-      <div style="font-size:48px;margin-bottom:12px">📗</div>
-      <h2>Connect Your Google Sheet</h2>
-      <p>
-        Your spreadsheet has tabs: <code>DTF RECEIVE2026</code>, <code>DTF EXPENSES2026</code>,
-        <code>SIGNAGE RECEIVE2026</code>, and <code>SUMMARY 2025</code>.<br><br>
-        To connect, set the <code>SHEET_ID</code> environment variable on your server
-        and make the sheet public (<b>File → Share → Anyone with the link → Viewer</b>).
-      </p>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:left;font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:20px;">
-        <div style="color:var(--muted);margin-bottom:8px"># In your .env file or Render environment:</div>
-        <div style="color:var(--accent)">SHEET_ID=<span style="color:var(--text)">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span></div>
-        <div style="color:var(--accent)">DTF_SHEET_TAB=<span style="color:var(--text)">DTF RECEIVE2026</span></div>
-        <div style="color:var(--accent)">EXPENSES_SHEET_TAB=<span style="color:var(--text)">DTF EXPENSES2026</span></div>
-        <div style="color:var(--accent)">SIGNAGE_SHEET_TAB=<span style="color:var(--text)">SIGNAGE RECEIVE2026</span></div>
-        <div style="color:var(--accent)">SUMMARY_SHEET_TAB=<span style="color:var(--text)">SUMMARY 2025</span></div>
+    <div class="sheets-banner" style="margin-bottom:20px;">
+      <span class="icon">📗</span>
+      <div class="text">
+        <h3>Google Sheets — Connected</h3>
+        <p id="sheetsTabsList">Sheet ID: 1WC8nUW7_07dPmPetNCtHzeAXkkulDPzw</p>
       </div>
-      <p style="font-size:12px">After connecting, all tabs (Dashboard, Orders, Signage, Expenses) will pull live data from your spreadsheet automatically.</p>
     </div>
 
-    <div id="sheetsLiveBox" style="display:none">
-      <div class="sheets-banner" style="margin-bottom:20px;">
-        <span class="icon">✅</span>
-        <div class="text">
-          <h3>Google Sheets Connected</h3>
-          <p id="sheetsTabsList">Loading tab info…</p>
-        </div>
+    <div class="connect-box" style="text-align:left; padding:20px 24px; margin-bottom:20px;">
+      <p style="font-size:13px; color:var(--muted); line-height:1.7;">
+        ⚠️ <strong style="color:var(--text)">One step needed:</strong> Make sure your spreadsheet is set to
+        <strong style="color:var(--accent)">Anyone with the link → Viewer</strong>.<br>
+        In Google Sheets: <code>File → Share → Share with others → Change → Anyone with the link → Viewer → Done</code>
+      </p>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">DTF Records (2026)</div>
+        <div class="stat-value accent" id="sheetStatDTF">—</div>
+        <div class="stat-sub">DTF RECEIVE2026</div>
       </div>
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">DTF Records (2026)</div>
-          <div class="stat-value accent" id="sheetStatDTF">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Expense Records</div>
-          <div class="stat-value red" id="sheetStatExp">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Signage Jobs</div>
-          <div class="stat-value yellow" id="sheetStatSig">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Summary Months</div>
-          <div class="stat-value green" id="sheetStatSum">—</div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label">Expense Records</div>
+        <div class="stat-value red" id="sheetStatExp">—</div>
+        <div class="stat-sub">DTF EXPENSES2026</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">Signage Jobs</div>
+        <div class="stat-value yellow" id="sheetStatSig">—</div>
+        <div class="stat-sub">SIGNAGE RECEIVE2026</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Summary Months</div>
+        <div class="stat-value green" id="sheetStatSum">—</div>
+        <div class="stat-sub">SUMMARY 2025</div>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:20px;">
+      <div style="padding:14px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <div class="section-title">📋 Tabs in your spreadsheet</div>
+      </div>
+      <table>
+        <thead><tr><th>Tab Name</th><th>Used For</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="mono" style="color:var(--accent)">DTF RECEIVE2026</td>
+            <td>Orders tab — all DTF printing records</td>
+            <td><span class="pill paid">Active</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="color:var(--accent)">DTF EXPENSES2026</td>
+            <td>Expenses tab — consumables, delivery, salaries</td>
+            <td><span class="pill paid">Active</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="color:var(--accent)">SIGNAGE RECEIVE2026</td>
+            <td>Signage tab — signage jobs and totals</td>
+            <td><span class="pill paid">Active</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="color:var(--accent)">SUMMARY 2025</td>
+            <td>Dashboard — monthly income chart</td>
+            <td><span class="pill paid">Active</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="color:var(--muted)">RECEIVE2025</td>
+            <td>Historical 2025 DTF data</td>
+            <td><span class="pill" style="background:rgba(139,144,176,.1);color:var(--muted)">Not loaded</span></td>
+          </tr>
+          <tr>
+            <td class="mono" style="color:var(--muted)">SIGNAGES RECEIVE 2025</td>
+            <td>Historical 2025 signage data</td>
+            <td><span class="pill" style="background:rgba(139,144,176,.1);color:var(--muted)">Not loaded</span></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -622,15 +787,10 @@ async function checkSheetsConfig() {
 
     if (d.connected) {
       banner.classList.remove('disconnected');
-      txt.textContent = `Connected — pulling live data from your spreadsheet`;
-      document.getElementById('sheetsSetupBox').style.display = 'none';
-      document.getElementById('sheetsLiveBox').style.display  = 'block';
-      document.getElementById('sheetsTabsList').textContent =
-        `Tabs: ${Object.values(d.tabs).join(' · ')}`;
-      loadSheetStats();
+      txt.textContent = 'Connected — pulling live data from your Google Spreadsheet';
     } else {
       banner.classList.add('disconnected');
-      txt.textContent = 'Not connected — set SHEET_ID env variable to connect your spreadsheet';
+      txt.textContent = 'Sheet not public yet — go to File → Share → Anyone with the link → Viewer';
     }
   } catch(e) {
     console.error('Config check failed', e);
@@ -939,6 +1099,7 @@ async function loadSummaryChart() {
   await checkSheetsConfig();
   loadDTF();
   loadSummaryChart();
+  loadSheetStats();
 })();
 </script>
 </body>
