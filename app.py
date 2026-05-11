@@ -14,11 +14,11 @@ Setup:
   4. python app.py
 """
 
-import os, json, functools
+import os, json, functools, secrets, urllib.parse
+import requests as http_requests
 from flask import (Flask, render_template, request, jsonify,
                    session, redirect, url_for, abort, g)
 from google.oauth2 import id_token
-from google_auth_oauthlib.flow import Flow
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
 
@@ -112,24 +112,34 @@ def admin_required(f):
     return wrapper
 
 # ── OAuth flow helper ─────────────────────────────────────────
-def make_flow(state=None):
-    client_config = {
-        "web": {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [REDIRECT_URI],
-        }
+GOOGLE_AUTH_URL  = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_SCOPES    = "openid email profile"
+
+def build_auth_url(state):
+    """Build Google OAuth2 authorization URL without PKCE."""
+    params = {
+        "client_id":     GOOGLE_CLIENT_ID,
+        "redirect_uri":  REDIRECT_URI,
+        "response_type": "code",
+        "scope":         GOOGLE_SCOPES,
+        "state":         state,
+        "access_type":   "offline",
+        "prompt":        "select_account",
     }
-    flow = Flow.from_client_config(
-        client_config,
-        scopes=["openid", "https://www.googleapis.com/auth/userinfo.email",
-                "https://www.googleapis.com/auth/userinfo.profile"],
-        redirect_uri=REDIRECT_URI,
-        state=state,          # ← restore state so PKCE code verifier matches
-    )
-    return flow
+    return GOOGLE_AUTH_URL + "?" + urllib.parse.urlencode(params)
+
+def exchange_code_for_token(code):
+    """Exchange authorization code for tokens — standard server-side flow, no PKCE."""
+    resp = http_requests.post(GOOGLE_TOKEN_URL, data={
+        "code":          code,
+        "client_id":     GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri":  REDIRECT_URI,
+        "grant_type":    "authorization_code",
+    })
+    resp.raise_for_status()
+    return resp.json()
 
 # ── Pricing helpers ───────────────────────────────────────────
 def get_rate(meters):
@@ -188,53 +198,55 @@ def login_page():
 def auth_google():
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         return "OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.", 500
-    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"   # dev only; remove in prod HTTPS
-    flow = make_flow()
-    auth_url, state = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="select_account"
-    )
+    state = secrets.token_urlsafe(32)
     session["oauth_state"] = state
-    return redirect(auth_url)
+    return redirect(build_auth_url(state))
 
 @app.route("/auth/callback")
 def auth_callback():
-    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
     try:
-        # Restore saved state so PKCE code verifier matches — fixes invalid_grant error
-        saved_state = session.pop("oauth_state", None)
-        callback_state = request.args.get("state")
-        if saved_state and callback_state and saved_state != callback_state:
-            return render_template("login.html", error="Session mismatch — please try signing in again.", configured=True)
-        flow = make_flow(state=saved_state or callback_state)
-        flow.fetch_token(authorization_response=request.url)
-        credentials = flow.credentials
+        # CSRF / state check
+        returned_state = request.args.get("state", "")
+        saved_state    = session.pop("oauth_state", None)
+        if not saved_state or returned_state != saved_state:
+            return render_template("login.html",
+                                   error="Session mismatch — please try signing in again.",
+                                   configured=True)
+
+        code = request.args.get("code")
+        if not code:
+            return render_template("login.html",
+                                   error="No authorization code received from Google.",
+                                   configured=True)
+
+        # Exchange code → tokens (plain POST, no PKCE)
+        token_data = exchange_code_for_token(code)
+        id_tok = token_data.get("id_token")
+        if not id_tok:
+            return render_template("login.html",
+                                   error="No ID token in Google response.",
+                                   configured=True)
+
+        # Verify the ID token
         id_info = id_token.verify_oauth2_token(
-            credentials.id_token,
+            id_tok,
             google_requests.Request(),
             GOOGLE_CLIENT_ID,
             clock_skew_in_seconds=10
         )
-        email = id_info.get("email", "")
-        name  = id_info.get("name", email.split("@")[0])
+        email   = id_info.get("email", "")
+        name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
 
         # Store / update user record
         users = load_users()
         if email not in users:
-            # Auto-allow owner
-            auto_allow = (OWNER_EMAIL and email == OWNER_EMAIL)
-            auto_admin = auto_allow
+            auto_allow = bool(OWNER_EMAIL and email == OWNER_EMAIL)
             users[email] = {
-                "email": email,
-                "name": name,
-                "picture": picture,
-                "admin": auto_admin,
-                "allowed": auto_allow
+                "email": email, "name": name, "picture": picture,
+                "admin": auto_allow, "allowed": auto_allow,
             }
         else:
-            # Update name/picture each login
             users[email]["name"]    = name
             users[email]["picture"] = picture
         save_users(users)
@@ -242,6 +254,7 @@ def auth_callback():
         session.permanent = True
         session["user"] = {"email": email, "name": name, "picture": picture}
         return redirect(url_for("index"))
+
     except Exception as e:
         return render_template("login.html", error=str(e), configured=True)
 
