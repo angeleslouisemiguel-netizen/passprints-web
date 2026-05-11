@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DTF CRM · passprints.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── LIGHT THEME (default) ── */
+    :root {
+      --bg-1: #f4f6f8;
+      --bg-2: #eef2f6;
+      --panel: #ffffff;
+      --card-bg: #ffffff;
+      --text: #0b1320;
+      --text-dim: rgba(11,19,32,0.65);
+      --muted: rgba(11,19,32,0.45);
+      --accent: #5b4bff;
+      --accent-2: #00a8ff;
+      --magenta: #ff2da8;
+      --cyan: #00b0ff;
+      --yellow: #ffd24a;
+      --green: #34C759;
+      --red: #FF3B30;
+      --orange: #FF9500;
+      --border: rgba(11,19,32,0.07);
+      --border-strong: rgba(11,19,32,0.12);
+      --shadow: 0 8px 22px rgba(11,19,32,0.06);
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+      --text-secondary: rgba(11,19,32,0.55);
+      --bg: #ffffff;
+      --bg-secondary: #f4f6f8;
+      --sidebar-bg: rgba(11,19,32,0.02);
+      --input-bg: #fbfdff;
+      --input-bg-focus: #ffffff;
+      --row-hover: #f7f9fb;
+      --row-selected: rgba(91,75,255,0.06);
+      --unpaid-card: #fff;
+      --unpaid-card-hover: #fdf6f6;
+      --agent-card: linear-gradient(135deg,#f0f2ff,#e8eeff);
+      --agent-card-name: #0b1320;
+      --chat-ai: #e9e9eb;
+      --chat-ai-text: #000;
+      --toggle-track: rgba(11,19,32,0.12);
+      --toggle-thumb: #fff;
+      --toggle-icon: '☀️';
+    }
+
+    /* ── DARK THEME ── */
+    [data-theme="dark"] {
+      --bg-1: #071026;
+      --bg-2: #071229;
+      --panel: #0f1b35;
+      --card-bg: #121e38;
+      --text: #e8edf5;
+      --text-dim: rgba(232,237,245,0.65);
+      --muted: rgba(232,237,245,0.45);
+      --border: rgba(255,255,255,0.06);
+      --border-strong: rgba(255,255,255,0.10);
+      --shadow: 0 8px 22px rgba(0,0,0,0.30);
+      --text-secondary: rgba(232,237,245,0.55);
+      --bg: #0f1b35;
+      --bg-secondary: #071026;
+      --sidebar-bg: rgba(0,0,0,0.15);
+      --input-bg: rgba(255,255,255,0.04);
+      --input-bg-focus: rgba(255,255,255,0.07);
+      --row-hover: rgba(255,255,255,0.03);
+      --row-selected: rgba(91,75,255,0.10);
+      --unpaid-card: #121e38;
+      --unpaid-card-hover: #1a2845;
+      --agent-card: linear-gradient(135deg,#1C1C2E,#2C2C3E);
+      --agent-card-name: #fff;
+      --chat-ai: #1e2b46;
+      --chat-ai-text: #e8edf5;
+      --toggle-track: rgba(91,75,255,0.4);
+      --toggle-thumb: #5b4bff;
+    }
+
+    body {
+      font-family: var(--font);
+      background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+      padding: 24px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      min-height: calc(100vh - 48px);
+      max-width: 1280px;
+      margin: 0 auto;
+      background: var(--panel);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: background 0.3s ease;
+    }
+
+    .shell::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none !important;
+      background: linear-gradient(90deg,rgba(0,176,255,0.04),rgba(91,75,255,0.04),rgba(255,45,168,0.03));
+      background-size: 300% 300%;
+      mix-blend-mode: screen;
+      opacity: 0.8;
+      animation: bgShift 12s linear infinite;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 230px;
+      padding: 1.25rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+      transition: background 0.3s ease;
+    }
+
+    .sidebar-logo { padding: 8px 12px; margin-bottom: 0.5rem; }
+    .logo-text { font-weight: 800; font-size: 20px; color: var(--text); letter-spacing: -0.02em; }
+    .logo-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .cmyk-bars { display: flex; gap: 5px; margin-top: 5px; }
+    .cmyk-bars .bar { display: block; height: 5px; border-radius: 4px; flex: 1; }
+    .cmyk-bars .bar-c { background: var(--cyan); }
+    .cmyk-bars .bar-m { background: var(--magenta); }
+    .cmyk-bars .bar-y { background: var(--yellow); }
+    .cmyk-bars .bar-k { background: #0b0b0b; }
+
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); padding: 10px 14px 4px;
+    }
+
+    .nav-btn {
+      display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+      border-radius: 8px; border: 1px solid transparent; background: transparent;
+      cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted);
+      width: 100%; text-align: left;
+      transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
+      position: relative;
+    }
+    .nav-btn i { font-size: 17px; flex-shrink: 0; }
+    .nav-btn:hover { color: var(--accent); background: rgba(91,75,255,0.06); border-color: rgba(91,75,255,0.15); }
+    .nav-btn.active { color: var(--accent); background: rgba(91,75,255,0.08); border-color: rgba(91,75,255,0.25); }
+    .nav-btn.active::before {
+      content: ''; position: absolute; left: 0; top: 20%; height: 60%; width: 3px;
+      border-radius: 0 3px 3px 0; background: linear-gradient(180deg, var(--cyan), var(--magenta));
+    }
+
+    .theme-toggle-wrap {
+      margin-top: auto; padding: 12px 14px 4px; display: flex;
+      align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted);
+    }
+    .theme-toggle { position: relative; width: 48px; height: 26px; }
+    .theme-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track { position: absolute; inset: 0; border-radius: 13px; background: var(--toggle-track); cursor: pointer; transition: background 0.3s; }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--toggle-thumb); transition: transform 0.3s, background 0.3s;
+      display: flex; align-items: center; justify-content: center; font-size: 11px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    [data-theme="dark"] .toggle-thumb { transform: translateX(22px); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; padding: 2rem; max-width: none; position: relative; z-index: 1; overflow-y: auto; }
+    .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .page-title { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; flex: 1; }
+
+    .top-search {
+      padding: 9px 14px; border-radius: 20px; background: transparent;
+      border: 1px solid var(--border); color: var(--text); font-size: 13px;
+      font-family: var(--font); outline: none; min-width: 180px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .top-search:focus { border-color: var(--accent); box-shadow: 0 4px 14px rgba(91,75,255,0.12); }
+    .top-search::placeholder { color: var(--muted); }
+
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--magenta));
+      display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      animation: floatY 4s ease-in-out infinite; flex-shrink: 0;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── METRIC GRID ── */
+    .metric-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 860px) { .metric-grid { grid-template-columns: 1fr 1fr !important; } }
+    .metric-card { background: var(--card-bg); border-radius: 12px; padding: 16px 18px; border: 1px solid var(--border); transition: background 0.3s; }
+    .metric-card.big { display: flex; flex-direction: column; justify-content: center; }
+    .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+    .metric-value { font-size: 20px; font-weight: 700; color: var(--text); }
+
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); margin-bottom: 8px; }
+
+    .card { background: var(--card-bg); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: var(--shadow); transition: background 0.3s; }
+
+    .project-row { border-radius: 8px; padding: 11px 14px; margin-bottom: 8px; cursor: pointer; background: var(--card-bg); border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s; }
+    .project-row:hover { background: var(--row-hover); }
+    .project-row.selected { background: var(--row-selected); border-color: rgba(91,75,255,0.3); }
+    .row-head { display: flex; justify-content: space-between; align-items: center; }
+    .row-meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .badge.paid    { background: #EAF3DE; color: #3B6D11; }
+    .badge.partial { background: #FAEEDA; color: #854F0B; }
+    .badge.unpaid  { background: #FCEBEB; color: #A32D2D; }
+    .badge.pd      { background: #EAF3DE; color: #3B6D11; }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .scard { background: var(--card-bg); border-radius: 12px; padding: 14px; border: 1px solid var(--border); transition: background 0.3s; }
+    .slabel { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+    .sval { font-size: 20px; font-weight: 800; color: var(--text); }
+    .schg { font-size: 11px; margin-top: 2px; }
+
+    .search-bar {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--input-bg); color: var(--text); font-size: 13px; font-family: var(--font);
+      outline: none; margin-bottom: 12px; transition: border-color 0.15s, box-shadow 0.15s, background 0.3s;
+    }
+    .search-bar:focus { background: var(--input-bg-focus); border-color: var(--accent); box-shadow: 0 4px 14px rgba(91,75,255,0.10); }
+    .search-bar::placeholder { color: var(--muted); }
+
+    .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filter-row select, .select-sm {
+      padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-md);
+      background: var(--input-bg); color: var(--text); font-size: 12px; font-family: var(--font); outline: none; cursor: pointer;
+    }
+    .filter-row select option, .select-sm option { background: var(--panel); color: var(--text); }
+
+    .btn {
+      padding: 9px 16px; border-radius: 8px; border: none; background: var(--accent);
+      cursor: pointer; font-size: 13px; font-family: var(--font); font-weight: 600; color: #fff;
+      transition: opacity 0.15s, box-shadow 0.15s, transform 0.15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(91,75,255,0.25); transform: translateY(-2px); }
+    .btn:active { transform: translateY(0px); }
+    .btn.sm { padding: 6px 12px; font-size: 12px; }
+    .btn.danger { background: transparent; color: var(--red); border: 1px solid rgba(255,59,48,0.2); }
+    .btn.success { background: var(--green); }
+    .btn.orange { background: var(--orange); }
+    .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+    .ibtn {
+      width: 100%; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      border: none; cursor: pointer; margin-top: 6px; font-family: var(--font);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.2s;
+    }
+    .ibtn:hover { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.22); }
+    .ibtn:active { transform: translateY(0px); box-shadow: none; }
+    .ibtn-bl { background: var(--accent); color: #fff; }
+    .ibtn-gr { background: var(--green); color: #fff; }
+    .ibtn-or { background: var(--orange); color: #fff; }
+    .ibtn-re { background: var(--red); color: #fff; }
+
+    .form-grid { display: grid; gap: 12px; }
+    .form-grid.cols2 { grid-template-columns: 1fr 1fr; }
+    .form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600; }
+    .form-group input, .form-group select, .form-group textarea, .finput {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--input-bg); color: var(--text); font-size: 13px; font-family: var(--font);
+      outline: none; transition: border-color 0.12s, box-shadow 0.12s, background 0.3s; margin-bottom: 8px;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus, .finput:focus {
+      background: var(--input-bg-focus); border-color: var(--accent); box-shadow: 0 4px 14px rgba(91,75,255,0.10);
+    }
+    .form-group textarea, .finput[rows] { resize: vertical; min-height: 70px; }
+
+    .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .tbl th { background: var(--bg-secondary); color: var(--muted); padding: 8px 10px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+    .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+    .tbl tr:last-child td { border-bottom: none; }
+    .tbl tr:hover td { background: var(--row-hover); }
+
+    .clist { background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 14px; transition: background 0.3s; }
+    .crow { display: flex; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--border); gap: 10px; cursor: pointer; transition: background 0.12s; }
+    .crow:last-child { border-bottom: none; }
+    .crow:hover { background: var(--row-hover); }
+    .ico { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ico i { font-size: 17px; color: #fff; }
+    .rmain { flex: 1; min-width: 0; }
+    .rt { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rs { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .rr { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
+    .agent-card { background: var(--agent-card); border-radius: 12px; margin-bottom: 10px; padding: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: 1px solid var(--border); transition: transform 0.15s, box-shadow 0.15s; }
+    .agent-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(91,75,255,0.12); }
+    .aico { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .ainfo { flex: 1; }
+    .aname { font-size: 14px; font-weight: 700; color: var(--agent-card-name); }
+    .adesc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ast { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(52,199,89,.2); color: #30D158; }
+
+    .cbub { padding: 9px 13px; border-radius: 14px; margin: 4px 0; max-width: 82%; font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
+    .cai { background: var(--chat-ai); color: var(--chat-ai-text); border-bottom-left-radius: 3px; }
+    .cus { background: var(--accent); color: #fff; border-bottom-right-radius: 3px; margin-left: auto; }
+    .cinp { flex: 1; background: var(--input-bg); border: 1px solid var(--border); border-radius: 20px; padding: 8px 13px; font-size: 13px; font-family: var(--font); outline: none; color: var(--text); }
+    .csend { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .csend i { font-size: 15px; color: #fff; }
+
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: flex-end; z-index: 200; pointer-events: none; }
+    .overlay.on { display: flex; pointer-events: auto; }
+    .sheet { background: var(--panel); border-radius: 16px 16px 0 0; width: 100%; max-width: 600px; margin: 0 auto; max-height: 88vh; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.25); }
+    .mhdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); z-index: 5; }
+    .mtitle { font-size: 16px; font-weight: 700; color: var(--text); }
+    .mclose { color: var(--accent); background: none; border: none; cursor: pointer; font-size: 14px; font-family: var(--font); }
+    .msave { color: var(--accent); background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 700; font-family: var(--font); }
+    .fsec { padding: 14px 18px 18px; }
+    .flabel { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; font-weight: 600; }
+    .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .rpaper { background: var(--card-bg); border-radius: 12px; margin: 10px 14px; padding: 18px; border: 1px solid var(--border); }
+    .detail-panel { background: var(--card-bg); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1rem; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; font-size: 13px; margin-bottom: 1rem; }
+    .detail-label { color: var(--text-secondary); padding: 4px 0; }
+    .detail-value { color: var(--text); font-weight: 500; padding: 4px 0; }
+    .cost-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .cost-row:last-of-type { border-bottom: none; }
+    .total-row { display: flex; justify-content: space-between; font-weight: 600; font-size: 14px; padding: 8px 0 0; border-top: 1px solid var(--border-strong); margin-top: 4px; }
+
+    .ai-output { background: var(--input-bg); border-radius: 8px; padding: 1rem 1.25rem; font-size: 13px; line-height: 1.6; color: var(--text-dim); white-space: pre-wrap; border: 1px solid var(--border); min-height: 80px; }
+    .tone-bar { display: flex; gap: 4px; margin-bottom: 10px; }
+    .tone-btn { padding: 5px 14px; border-radius: var(--radius-md); font-size: 12px; cursor: pointer; border: 1px solid var(--border); color: var(--text-secondary); background: transparent; font-family: var(--font); transition: all 0.15s; }
+    .tone-btn.active { border-color: var(--text); color: var(--text); background: var(--bg-secondary); }
+    .unpaid-card { border: 1px solid rgba(255,59,48,0.2); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; background: var(--unpaid-card); }
+    .unpaid-card:hover { background: var(--unpaid-card-hover); }
+    .unpaid-card.selected { border-color: var(--red); }
+
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 9999; }
+    .toast.show { opacity: 1; }
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+    .progress { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+    .pfill { height: 100%; border-radius: 3px; }
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); font-size: 13px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    @keyframes bgShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .animate-card { animation: fadeUp 480ms cubic-bezier(.2,.9,.2,1) both; }
+    @keyframes btnPop { 0% { transform: scale(1); } 40% { transform: scale(0.94); } 70% { transform: scale(1.04); } 100% { transform: scale(1); } }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+    .btn, .ibtn, .nav-btn, .tone-btn { position: relative; overflow: hidden; }
+    .btn:active, .ibtn:active { animation: btnPop 0.28s cubic-bezier(.36,.07,.19,.97) both; }
+    .ripple-effect { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple 0.5s linear; background: rgba(255,255,255,0.3); pointer-events: none; width: 60px; height: 60px; margin-top: -30px; margin-left: -30px; }
+
+    @media (max-width: 860px) {
+      body { padding: 0; }
+      .shell { flex-direction: column; border-radius: 0; min-height: 100vh; }
+      .sidebar { width: 100%; flex-direction: row; padding: 10px 12px; gap: 4px; overflow-x: auto; }
+      .sidebar-logo { margin-right: auto; flex-shrink: 0; }
+      .nav-section-label { display: none; }
+      .nav-btn span { display: none; }
+      .nav-btn { padding: 8px 10px; justify-content: center; }
+      .nav-btn.active::before { display: none; }
+      .theme-toggle-wrap { margin: 0; padding: 0; }
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 540px) {
+      .form-grid.cols2, .form-grid.cols3 { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell" id="APP">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div>
+          <div class="logo-text">passprints.</div>
+          <div class="logo-sub">DTF Print CRM</div>
+        </div>
+        <label class="theme-toggle" title="Toggle light/dark mode">
+          <input type="checkbox" id="themeToggle" onchange="toggleTheme(this)">
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb" id="toggleThumb">☀️</span>
+        </label>
+      </div>
+      <div class="cmyk-bars" aria-hidden="true">
+        <span class="bar bar-c"></span><span class="bar bar-m"></span>
+        <span class="bar bar-y"></span><span class="bar bar-k"></span>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Main</div>
+    <button class="nav-btn active" onclick="showPage('dash',this)"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></button>
+    <button class="nav-btn" onclick="showPage('clients',this)"><i class="ti ti-users"></i><span>Customers</span></button>
+    <button class="nav-btn" onclick="showPage('orders',this)"><i class="ti ti-list-details"></i><span>Orders</span></button>
+    <button class="nav-btn" onclick="showPage('quotes',this)"><i class="ti ti-receipt"></i><span>Receipts</span></button>
+
+    <div class="nav-section-label">Tools</div>
+    <button class="nav-btn" onclick="showPage('agents',this)"><i class="ti ti-robot"></i><span>AI Agents</span></button>
+    <button class="nav-btn" onclick="openAdd()"><i class="ti ti-plus"></i><span>New Order</span></button>
+    <button class="nav-btn" id="nav-history" onclick="showPage('history',this)">
+      <i class="ti ti-history"></i><span>History</span>
+      <span id="history-badge" style="display:none;margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:99px;padding:1px 6px;"></span>
+    </button>
+
+    <div style="margin-top:auto;padding:12px 0 0;border-top:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-bottom:6px;">
+        {% if user.picture %}
+        <img src="{{ user.picture }}" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);" alt="">
+        {% else %}
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;">{{ user.name[0]|upper }}</div>
+        {% endif %}
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.name }}</div>
+          <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.email }}</div>
+        </div>
+      </div>
+      {% if admin %}
+      <a href="/admin" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-dim);text-decoration:none;margin-bottom:2px;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
+        <i class="ti ti-settings" style="font-size:15px;color:var(--accent);"></i> Admin Panel
+      </a>
+      {% endif %}
+      <a href="/logout" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-dim);text-decoration:none;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
+        <i class="ti ti-logout" style="font-size:15px;color:var(--red);"></i> Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dash">
+      <div class="topbar">
+        <p class="page-title">Dashboard</p>
+        <input class="top-search" placeholder="Search customers…" oninput="filterDash(this.value)">
+        <select id="monthSel" class="select-sm" onchange="renderDash()">
+          <option value="all">All months</option>
+        </select>
+        <div class="avatar" title="You"></div>
+      </div>
+      <div class="metric-grid" id="metrics"></div>
+      <div class="dash-grid">
+        <div>
+          <p class="section-label">Recent orders</p>
+          <div id="dash-recent"></div>
+        </div>
+        <div>
+          <p class="section-label">Outstanding balances</p>
+          <div id="dash-unpaid"></div>
+        </div>
+      </div>
+      <!-- BANK DETAILS -->
+      <div style="margin-top:1.25rem;">
+        <p class="section-label">Payment Details</p>
+        <div style="background:var(--card-bg);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;">
+          <div style="padding:6px 0;">
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);">
+              <div style="width:38px;height:38px;border-radius:9px;background:#CC0000;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="color:#fff;font-weight:900;font-size:11px;">BPI</span>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;color:var(--muted);font-weight:600;">Bank of the Philippine Islands</div>
+                <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:0.05em;margin-top:2px;font-family:monospace;">9929260433</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);">
+              <div style="width:38px;height:38px;border-radius:9px;background:#0057A8;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="color:#fff;font-weight:900;font-size:11px;">BDO</span>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;color:var(--muted);font-weight:600;">BDO Unibank</div>
+                <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:0.05em;margin-top:2px;font-family:monospace;">005520304611</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;">
+              <div style="width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#007DFF,#0055D4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="ti ti-device-mobile" style="color:#fff;font-size:18px;"></i>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;color:var(--muted);font-weight:600;">GCash</div>
+                <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">JOEMAREY S. PASAFORTE</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text);letter-spacing:0.05em;margin-top:1px;font-family:monospace;">0956 832 0608</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:10px 18px;background:var(--bg-secondary);border-top:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;">
+            <i class="ti ti-shield-check" style="font-size:13px;color:var(--green);"></i>
+            Always verify payment with customer before releasing order.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS -->
+    <div class="page" id="page-clients">
+      <div class="topbar">
+        <p class="page-title">Customers</p>
+        <input type="file" id="xlsxInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(this)">
+        <button class="btn sm" style="background:linear-gradient(135deg,#34C759,#30b850);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="document.getElementById('xlsxInput').click()">
+          <i class="ti ti-file-spreadsheet"></i> Import Excel
+        </button>
+        <button class="btn sm" onclick="openAddClient()"><i class="ti ti-user-plus"></i> Add</button>
+        <button class="btn sm" onclick="confirmClearData()" style="background:linear-gradient(135deg,#FF3B30,#cc2a20);color:#fff;border:none;"><i class="ti ti-trash"></i> Clear Data</button>
+      </div>
+      <div id="importHint" style="display:none;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);">
+        <strong>Columns A–F:</strong> <code>DATE</code> · <code>CUSTOMER</code> · <code>QTY</code> · <code>AMOUNT</code> · <code>TOTAL</code> · <code>STATUS</code> &nbsp;(status: <em>pd</em> = paid, blank = unpaid).
+        <a href="#" onclick="downloadTemplate();return false;" style="color:var(--accent);font-weight:700;">Download template ↓</a>
+      </div>
+      <input class="search-bar" placeholder="Search customers…" oninput="filterClients(this.value)">
+      <div class="clist" id="clientList"></div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="page" id="page-orders">
+      <div class="topbar">
+        <p class="page-title">Orders</p>
+        <button class="btn sm" onclick="openNewTxn()"><i class="ti ti-plus"></i> Add Order</button>
+        <button class="btn sm" onclick="confirmClearData()" style="background:linear-gradient(135deg,#FF3B30,#cc2a20);color:#fff;border:none;"><i class="ti ti-trash"></i> Clear Data</button>
+      </div>
+      <div class="filter-row">
+        <select id="ord-status" onchange="renderOrders()">
+          <option value="">All status</option>
+          <option value="pd">Paid</option>
+          <option value="unpaid">Unpaid</option>
+        </select>
+        <select id="ord-month" onchange="renderOrders()">
+          <option value="">All months</option>
+        </select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="tbl">
+          <thead>
+            <tr><th>Date</th><th>Customer</th><th>Meters</th><th>Rate</th><th>Total</th><th>Status</th></tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RECEIPTS / QUOTES -->
+    <div class="page" id="page-quotes">
+      <p class="page-title">Quote & Receipt Builder</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div>
+          <div class="card">
+            <p class="section-label" style="margin-bottom:12px;">New Quote</p>
+            <div class="flabel">Customer Name</div>
+            <input class="finput" id="qClient" placeholder="e.g. Wearkap…" list="cnames">
+            <datalist id="cnames"></datalist>
+            <div class="flabel">Meters (DTF Film)</div>
+            <input class="finput" id="qMeters" type="number" placeholder="0.00" oninput="calcQuote()">
+            <div id="qResult" style="display:none;background:var(--bg-secondary);border-radius:8px;padding:12px;margin-bottom:10px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted)">Meters</span><span id="qM" style="font-weight:600;"></span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="color:var(--muted)">Rate</span><span id="qR" style="font-weight:600;"></span></div>
+              <div class="divider"></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">Total</span><span id="qT" style="font-weight:800;font-size:16px;color:var(--green);"></span></div>
+            </div>
+            <button class="ibtn ibtn-bl" onclick="genReceipt()"><i class="ti ti-receipt"></i> Generate Receipt</button>
+          </div>
+          <!-- Pricing Tiers -->
+          <div style="background:var(--bg-secondary);border-radius:10px;padding:12px 14px;margin-top:-4px;border:1px solid var(--border);">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:8px;">DTF Pricing Tiers</div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">
+              <div style="background:var(--card-bg);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border);">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">1–9m</div>
+                <div style="font-size:14px;font-weight:800;color:var(--text);">₱170</div>
+                <div style="font-size:9px;color:var(--muted);margin-top:1px;">/meter</div>
+              </div>
+              <div style="background:var(--card-bg);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border);">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">10–19m</div>
+                <div style="font-size:14px;font-weight:800;color:var(--text);">₱170</div>
+                <div style="font-size:9px;color:var(--muted);margin-top:1px;">/meter</div>
+              </div>
+              <div style="background:var(--card-bg);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border);">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">20–50m</div>
+                <div style="font-size:14px;font-weight:800;color:var(--cyan);">₱160</div>
+                <div style="font-size:9px;color:var(--muted);margin-top:1px;">/meter</div>
+              </div>
+              <div style="background:var(--card-bg);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border);">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">51–100m</div>
+                <div style="font-size:14px;font-weight:800;color:var(--accent);">₱150</div>
+                <div style="font-size:9px;color:var(--muted);margin-top:1px;">/meter</div>
+              </div>
+              <div style="background:var(--card-bg);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border);">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">101–200m</div>
+                <div style="font-size:14px;font-weight:800;color:var(--magenta);">₱140</div>
+                <div style="font-size:9px;color:var(--muted);margin-top:1px;">/meter</div>
+              </div>
+              <!-- FIX: was ₱150, now correctly ₱130 -->
+              <div style="background:var(--card-bg);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border);">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">201m+</div>
+                <div style="font-size:14px;font-weight:800;color:var(--green);">₱130</div>
+                <div style="font-size:9px;color:var(--muted);margin-top:1px;">/meter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" id="receiptCard" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <div>
+                <div style="font-weight:800;font-size:15px;color:var(--text)">passprints.</div>
+                <div style="font-size:10px;color:var(--muted)">DTF Film Service</div>
+              </div>
+              <div style="display:flex;gap:4px;">
+                <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--cyan)"></span>
+                <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--magenta)"></span>
+                <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--yellow)"></span>
+                <span style="display:block;width:18px;height:4px;border-radius:3px;background:#0b0b0b"></span>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div id="receiptContent"></div>
+            <div class="divider"></div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px;text-align:center;">BPI: 9929260433 · BDO: 005520304611 · GCash available</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
+              <button class="ibtn" style="font-size:13px;padding:9px;background:var(--green);color:#fff;" onclick="shareR()"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+            </div>
+          </div>
+          <div id="receiptEmpty" class="empty" style="padding:4rem 1rem;">
+            <div style="font-size:2rem;margin-bottom:8px;">🧾</div>
+            <div>Fill in the form to generate a receipt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI AGENTS -->
+    <div class="page" id="page-agents">
+      <p class="page-title">AI Agents</p>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Tap any agent to chat · Powered by Gemini AI · Based on your DTF data</div>
+      <div class="agent-card" onclick="openAgent('expense')">
+        <div class="aico" style="background:var(--orange)"><i class="ti ti-cash" style="color:#fff"></i></div>
+        <div class="ainfo"><div class="aname">💸 Expense Logger</div><div class="adesc">Log DTF material costs, electricity, supplies in plain text</div></div>
+        <span class="ast">Active</span>
+      </div>
+      <div class="agent-card" onclick="openAgent('quote')">
+        <div class="aico" style="background:var(--accent)"><i class="ti ti-file-invoice" style="color:#fff"></i></div>
+        <div class="ainfo"><div class="aname">📄 DTF Quote Builder</div><div class="adesc">Auto-calculate quote based on meters + pricing tier</div></div>
+        <span class="ast">Active</span>
+      </div>
+      <div class="agent-card" onclick="openAgent('followup')">
+        <div class="aico" style="background:var(--red)"><i class="ti ti-bell" style="color:#fff"></i></div>
+        <div class="ainfo"><div class="aname">🔔 Payment Chaser</div><div class="adesc">Select a customer & draft follow-up messages for unpaid orders</div></div>
+        <span class="ast">Active</span>
+      </div>
+      <div class="agent-card" onclick="openAgent('receipt')">
+        <div class="aico" style="background:#AF52DE"><i class="ti ti-receipt" style="color:#fff"></i></div>
+        <div class="ainfo"><div class="aname">🧾 Receipt Generator</div><div class="adesc">Generate formatted receipt with BPI/BDO/GCash details</div></div>
+        <span class="ast">Active</span>
+      </div>
+      <div class="agent-card" onclick="openAgent('report')">
+        <div class="aico" style="background:#5AC8FA"><i class="ti ti-chart-bar" style="color:#fff"></i></div>
+        <div class="ainfo"><div class="aname">📊 Business Analyst</div><div class="adesc">Select a customer or ask about your overall 2026 sales data</div></div>
+        <span class="ast">Active</span>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="page-history">
+      <div class="topbar">
+        <p class="page-title">Activity History</p>
+        <button class="btn sm" id="undoBtn" onclick="undoLastAction()" style="display:none;background:linear-gradient(135deg,#FF9500,#e08500);color:#fff;border:none;gap:6px;">
+          <i class="ti ti-arrow-back-up"></i> Undo
+        </button>
+        <button class="btn sm" onclick="clearHistory()" style="background:var(--bg-secondary);color:var(--text-secondary);border:1px solid var(--border);">
+          <i class="ti ti-trash"></i> Clear History
+        </button>
+      </div>
+      <div id="historyEmpty" class="empty" style="padding:4rem 1rem;">
+        <div style="font-size:2.5rem;margin-bottom:10px;">📋</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-secondary);">No activity yet</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Actions like adding orders, customers, and payment changes will appear here.</div>
+      </div>
+      <div id="historyList"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- OVERLAY MODAL -->
+<div class="overlay" id="OVL" onclick="if(event.target===this)closeModal()">
+  <div class="sheet" id="SHT"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── THEME ── */
+function toggleTheme(checkbox) {
+  const html = document.documentElement;
+  const thumb = document.getElementById('toggleThumb');
+  if (checkbox.checked) { html.setAttribute('data-theme','dark'); thumb.textContent='🌙'; }
+  else { html.setAttribute('data-theme','light'); thumb.textContent='☀️'; }
+}
+
+/* ── DATA (all server-side) ── */
+const HISTORY_KEY = 'passprintsDtfHistory';
+const dtfData = [];
+const savedCustomers = [];
+
+/* ── HISTORY & UNDO ── */
+let actionHistory = [];
+let undoStack = [];
+let unseenCount = 0;
+
+function loadHistory() {
+  try { const s = localStorage.getItem(HISTORY_KEY); if (s) actionHistory = JSON.parse(s); } catch(e) { actionHistory = []; }
+  renderHistoryPage();
+}
+
+function saveHistory() {
+  if (actionHistory.length > 200) actionHistory = actionHistory.slice(0, 200);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(actionHistory));
+}
+
+function recordAction(type, description, detail, undoSnapshot) {
+  const entry = { id: Date.now()+Math.random(), type, description, detail, timestamp: new Date().toISOString(), undoable: !!undoSnapshot };
+  actionHistory.unshift(entry);
+  if (undoSnapshot) {
+    undoStack.unshift({ entryId: entry.id, snapshot: undoSnapshot });
+    if (undoStack.length > 20) undoStack.pop();
+  }
+  unseenCount++;
+  saveHistory();
+  updateHistoryBadge();
+  if (document.getElementById('page-history').classList.contains('active')) renderHistoryPage();
+}
+
+function updateHistoryBadge() {
+  const badge = document.getElementById('history-badge');
+  if (!badge) return;
+  if (unseenCount > 0) { badge.style.display='inline'; badge.textContent=unseenCount>99?'99+':unseenCount; }
+  else { badge.style.display='none'; }
+  const undoBtn = document.getElementById('undoBtn');
+  if (undoBtn) undoBtn.style.display = undoStack.length > 0 ? 'flex' : 'none';
+}
+
+function clearHistoryBadge() {
+  unseenCount = 0;
+  const badge = document.getElementById('history-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function snapshotState() {
+  return { dtfData: JSON.parse(JSON.stringify(dtfData)), savedCustomers: JSON.parse(JSON.stringify(savedCustomers)) };
+}
+
+function undoLastAction() {
+  if (!undoStack.length) { toast('Nothing to undo'); return; }
+  const { snapshot } = undoStack.shift();
+  dtfData.splice(0, dtfData.length, ...snapshot.dtfData);
+  savedCustomers.splice(0, savedCustomers.length, ...snapshot.savedCustomers);
+  rebuildClientMap();
+  saveAppState();
+  populateMonthSelectors();
+  renderDash(); buildClientList(); renderOrders();
+  if (actionHistory.length) actionHistory[0].undone = true;
+  saveHistory(); updateHistoryBadge(); renderHistoryPage();
+  toast('↩️ Action undone');
+}
+
+function clearHistory() {
+  actionHistory = []; undoStack = [];
+  localStorage.removeItem(HISTORY_KEY);
+  updateHistoryBadge(); renderHistoryPage();
+  toast('History cleared');
+}
+
+const HISTORY_ICONS = {
+  add_order:       { icon: 'ti-package',        color: 'var(--accent)', label: 'Order Added' },
+  add_customer:    { icon: 'ti-user-plus',       color: 'var(--green)',  label: 'Customer Added' },
+  payment_change:  { icon: 'ti-credit-card',     color: 'var(--cyan)',   label: 'Payment Updated' },
+  delete_customer: { icon: 'ti-user-minus',      color: 'var(--red)',    label: 'Customer Deleted' },
+  clear_data:      { icon: 'ti-trash',           color: 'var(--red)',    label: 'All Data Cleared' },
+  import:          { icon: 'ti-file-spreadsheet',color: 'var(--orange)', label: 'Data Imported' },
+};
+
+function renderHistoryPage() {
+  const empty = document.getElementById('historyEmpty');
+  const list  = document.getElementById('historyList');
+  const undoBtn = document.getElementById('undoBtn');
+  if (!empty || !list) return;
+  if (undoBtn) undoBtn.style.display = undoStack.length > 0 ? 'flex' : 'none';
+  if (!actionHistory.length) { empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display = 'none';
+  const groups = {};
+  actionHistory.forEach(entry => {
+    const day = entry.timestamp.slice(0,10);
+    if (!groups[day]) groups[day] = [];
+    groups[day].push(entry);
+  });
+  list.innerHTML = Object.keys(groups).map(day => {
+    const d = new Date(day+'T00:00:00');
+    const today = new Date().toISOString().slice(0,10);
+    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const label = day===today?'Today':day===yesterday?'Yesterday':d.toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    const rows = groups[day].map(entry => {
+      const meta = HISTORY_ICONS[entry.type] || { icon:'ti-activity', color:'var(--muted)', label:'Action' };
+      const time = new Date(entry.timestamp).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true});
+      const undoneStyle = entry.undone ? 'opacity:0.45;text-decoration:line-through;' : '';
+      const undoneTag = entry.undone ? '<span style="font-size:10px;background:rgba(255,149,0,0.15);color:var(--orange);border-radius:4px;padding:1px 6px;font-weight:700;margin-left:6px;">Undone</span>' : '';
+      return `<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border-radius:10px;margin-bottom:6px;background:var(--card-bg);border:1px solid var(--border);${undoneStyle}">
+        <div style="width:34px;height:34px;border-radius:50%;background:${meta.color}1a;border:1.5px solid ${meta.color}44;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+          <i class="ti ${meta.icon}" style="font-size:15px;color:${meta.color};"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${entry.description}${undoneTag}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${entry.detail||''}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;padding-top:2px;">${time}</div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:18px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:8px;padding:0 2px;">${label}</div>${rows}</div>`;
+  }).join('');
+}
+
+/* ── CLIENT MAP ── */
+const clientMap = {};
+const COLORS = ['#007AFF','#AF52DE','#34C759','#FF9500','#FF3B30','#5AC8FA','#1B7F3C','#8B4513','#E91E63','#009688'];
+let clients = [];
+
+function rebuildClientMap() {
+  Object.keys(clientMap).forEach(key => delete clientMap[key]);
+  dtfData.forEach(r => {
+    if (!clientMap[r.name]) clientMap[r.name] = {name:r.name,total:0,orders:0,unpaid:0,lastDate:r.date,color:COLORS[Object.keys(clientMap).length%COLORS.length]};
+    clientMap[r.name].total += r.total;
+    clientMap[r.name].orders++;
+    if (r.status !== 'pd') clientMap[r.name].unpaid += r.total;
+    if (r.date > clientMap[r.name].lastDate) clientMap[r.name].lastDate = r.date;
+  });
+  savedCustomers.forEach(c => {
+    if (!clientMap[c.name]) clientMap[c.name] = {name:c.name,total:0,orders:0,unpaid:0,lastDate:'',color:COLORS[Object.keys(clientMap).length%COLORS.length]};
+  });
+  clients = Object.values(clientMap).sort((a,b) => b.total - a.total);
+}
+
+/* ── SERVER DATA ── */
+async function loadSavedData() {
+  try {
+    const res = await fetch('/api/data');
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+    if (Array.isArray(data.orders)) {
+      dtfData.splice(0, dtfData.length, ...data.orders.map(row => ({
+        date:   String(row.date   || ''),
+        name:   String(row.name   || ''),
+        qty:    Number(row.qty)   || 0,
+        rate:   Number(row.rate)  || 0,
+        total:  Number(row.total) || 0,
+        status: String(row.status || '')
+      })));
+    }
+    if (Array.isArray(data.customers)) {
+      savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({
+        name:  String(c.name  || ''),
+        phone: String(c.phone || ''),
+        notes: String(c.notes || '')
+      })));
+    }
+    rebuildClientMap();
+  } catch(err) {
+    console.error('Failed to load data from server:', err);
+    toast('⚠️ Could not load data from server.');
+  }
+}
+
+let autoSaveTimer;
+function saveAppState() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(_pushDataToServer, 600);
+}
+
+async function _pushDataToServer() {
+  try {
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ orders: dtfData, customers: savedCustomers })
+    });
+  } catch(err) {
+    console.error('Auto-save failed:', err);
+  }
+}
+
+function fmt(n) { return '₱' + parseFloat(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+/* ── NAVIGATION ── */
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name==='dash')    renderDash();
+  if (name==='clients') buildClientList();
+  if (name==='orders')  renderOrders();
+  if (name==='history') { renderHistoryPage(); clearHistoryBadge(); }
+}
+
+/* ── DASHBOARD ── */
+function getMonthKey(d) { return d ? d.slice(0,7) : ''; }
+
+function populateMonthSelectors() {
+  const months = [...new Set(dtfData.map(r => getMonthKey(r.date)))].sort().reverse();
+  ['monthSel','ord-month'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    months.forEach(m => {
+      if (el.querySelector(`option[value="${m}"]`)) return;
+      const d = new Date(m+'-01');
+      const label = d.toLocaleString('default',{year:'numeric',month:'long'});
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = label;
+      el.appendChild(opt);
+    });
+  });
+}
+
+let dashFilter = '';
+function filterDash(v) { dashFilter = v; renderDashLists(); }
+
+function renderDash() {
+  const month = document.getElementById('monthSel').value;
+  const source = month==='all' ? dtfData : dtfData.filter(r => getMonthKey(r.date)===month);
+  const totalRev      = source.filter(r => r.status==='pd').reduce((s,r) => s+r.total, 0);
+  const totalUnpaid   = source.filter(r => r.status!=='pd').reduce((s,r) => s+r.total, 0);
+  const totalExpected = source.reduce((s,r) => s+r.total, 0);
+  const unpaidCount   = [...new Set(source.filter(r => r.status!=='pd').map(r => r.name))].length;
+  const paidCount     = [...new Set(source.filter(r => r.status==='pd').map(r => r.name))].length;
+  const collectionRate = totalExpected > 0 ? Math.round((totalRev/totalExpected)*100) : 0;
+  const monthLabel = month==='all' ? 'All Months' : new Date(month+'-01').toLocaleString('default',{year:'numeric',month:'long'});
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric-card big animate-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="flex:1;">
+          <div class="metric-label">${monthLabel} · Expected Total</div>
+          <div style="font-size:26px;font-weight:900;margin-top:4px;color:var(--accent);">${fmt(totalExpected)}</div>
+          <div style="display:flex;gap:10px;margin-top:10px;align-items:center;">
+            <div style="flex:1;background:var(--border);border-radius:99px;height:6px;overflow:hidden;">
+              <div style="width:${collectionRate}%;background:linear-gradient(90deg,var(--cyan),var(--green));height:100%;border-radius:99px;transition:width 0.6s;"></div>
+            </div>
+            <span style="font-size:12px;font-weight:700;color:var(--green);white-space:nowrap;">${collectionRate}% collected</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;">${source.length} orders · ${paidCount} paying clients</div>
+        </div>
+        <div style="font-size:38px;font-weight:900;color:var(--accent);opacity:0.15;margin-left:8px;">₱</div>
+      </div>
+    </div>
+    <div class="metric-card animate-card">
+      <div class="metric-label">✅ Collected (Paid)</div>
+      <div class="metric-value" style="color:var(--green);font-size:18px;">${fmt(totalRev)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">${source.filter(r=>r.status==='pd').length} paid orders</div>
+    </div>
+    <div class="metric-card animate-card">
+      <div class="metric-label">❗ Outstanding</div>
+      <div class="metric-value" style="color:var(--red);font-size:18px;">${fmt(totalUnpaid)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">${unpaidCount} client${unpaidCount!==1?'s':''} unpaid</div>
+    </div>
+    <div class="metric-card animate-card">
+      <div class="metric-label">📊 Collection Rate</div>
+      <div class="metric-value" style="color:${collectionRate>=80?'var(--green)':collectionRate>=50?'var(--orange)':'var(--red)'};font-size:28px;font-weight:900;">${collectionRate}%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">${100-collectionRate}% still pending</div>
+    </div>`;
+  renderDashLists();
+}
+
+function renderDashLists() {
+  const month = document.getElementById('monthSel').value;
+  let source = month==='all' ? dtfData : dtfData.filter(r => getMonthKey(r.date)===month);
+  if (dashFilter) source = source.filter(r => r.name.toLowerCase().includes(dashFilter.toLowerCase()));
+  const recent = source.slice().reverse().slice(0,6);
+  document.getElementById('dash-recent').innerHTML = recent.length
+    ? recent.map(r => `<div class="project-row"><div class="row-head"><span style="font-weight:600;font-size:13px;">${r.name}</span><span class="badge ${r.status==='pd'?'paid':'unpaid'}">${r.status==='pd'?'Paid':'Unpaid'}</span></div><div class="row-meta"><span>${r.date}</span><span>${r.qty}m @ ₱${r.rate}/m</span><span style="margin-left:auto;font-weight:600;">${fmt(r.total)}</span></div></div>`).join('')
+    : '<div class="empty">No orders for this period</div>';
+  const unpaidByClient = {};
+  source.filter(r => r.status!=='pd').forEach(r => {
+    if (!unpaidByClient[r.name]) unpaidByClient[r.name] = {name:r.name,total:0,count:0};
+    unpaidByClient[r.name].total += r.total;
+    unpaidByClient[r.name].count++;
+  });
+  const unpaidList = Object.values(unpaidByClient).sort((a,b) => b.total-a.total);
+  document.getElementById('dash-unpaid').innerHTML = unpaidList.length
+    ? unpaidList.map(c => `<div class="project-row" onclick="openClientById('${c.name}')"><div class="row-head"><span style="font-weight:600;font-size:13px;">${c.name}</span><span class="badge unpaid">${fmt(c.total)}</span></div><div class="row-meta"><span>${c.count} unpaid order${c.count>1?'s':''}</span></div></div>`).join('')
+    : '<div class="empty" style="padding:1.5rem;">✅ All paid up!</div>';
+}
+
+/* ── CLIENTS ── */
+function buildClientList(filter='') {
+  const list = filter ? clients.filter(c => c.name.toLowerCase().includes(filter.toLowerCase())) : clients;
+  const el = document.getElementById('clientList');
+  el.innerHTML = list.map(c => `
+    <div class="crow" onclick="openClientById(this.dataset.name)" data-name="${c.name}">
+      <div class="ico" style="background:${c.color}"><i class="ti ti-user"></i></div>
+      <div class="rmain"><div class="rt">${c.name}</div><div class="rs">${c.orders} orders · Last: ${c.lastDate}</div></div>
+      <div class="rr" style="gap:8px;">
+        ${c.unpaid>0?`<span class="badge unpaid">${fmt(c.unpaid)}</span>`:`<span class="badge paid">Paid ✓</span>`}
+        <button onclick="event.stopPropagation();confirmDeleteClient('${c.name.replace(/'/g,"\\'")}');" style="background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:var(--red);border-radius:7px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;" title="Delete customer"><i class="ti ti-trash" style="font-size:14px;"></i></button>
+        <i class="ti ti-chevron-right"></i>
+      </div>
+    </div>`).join('') || '<div class="empty">No customers found</div>';
+  const dl = document.getElementById('cnames');
+  if (dl) dl.innerHTML = clients.map(c => `<option value="${c.name}">`).join('');
+}
+
+function filterClients(v) { buildClientList(v); }
+
+function confirmDeleteClient(name) {
+  openModal(`
+    <div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);">
+      <button class="mclose" onclick="closeModal()">Cancel</button>
+      <span class="mtitle" style="color:var(--red);">Delete Customer</span><span></span>
+    </div>
+    <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
+      <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,59,48,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+        <i class="ti ti-trash" style="font-size:24px;color:var(--red);"></i>
+      </div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">Delete "${name}"?</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">This will remove the customer and all their order records.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="closeModal()">Cancel</button>
+        <button class="ibtn ibtn-re" onclick="deleteClient('${name.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i> Delete</button>
+      </div>
+    </div>`);
+}
+
+function deleteClient(name) {
+  const snapshot = snapshotState();
+  const clientInfo = clientMap[name];
+  const orderCount = dtfData.filter(r => r.name===name).length;
+  for (let i=dtfData.length-1; i>=0; i--) { if (dtfData[i].name===name) dtfData.splice(i,1); }
+  const idx = clients.findIndex(c => c.name===name);
+  if (idx!==-1) clients.splice(idx,1);
+  delete clientMap[name];
+  for (let i=savedCustomers.length-1; i>=0; i--) { if (savedCustomers[i].name===name) savedCustomers.splice(i,1); }
+  saveAppState();
+  recordAction('delete_customer', `Customer deleted — ${name}`, `${orderCount} order${orderCount!==1?'s':''} removed · Total was ${fmt(clientInfo?.total||0)}`, snapshot);
+  closeModal(); toast(`"${name}" deleted`);
+  rebuildClientMap(); buildClientList(); renderDash(); renderOrders();
+}
+
+function openClientById(name) { const c = clientMap[name]; if (c) openClient(c); }
+
+function toggleTxnStatus(clientName, txnIndex) {
+  const txns = dtfData.filter(r => r.name===clientName);
+  const txn = txns[txnIndex];
+  if (!txn) return;
+  const isCurrentlyPaid = txn.status==='pd';
+  const newStatus = isCurrentlyPaid ? '' : 'pd';
+  const actionLabel = isCurrentlyPaid ? 'Mark as Unpaid' : 'Mark as Paid';
+  const actionColor = isCurrentlyPaid ? 'var(--red)' : 'var(--green)';
+  const actionIcon = isCurrentlyPaid ? 'ti-x' : 'ti-check';
+  openModal(`
+    <div class="mhdr">
+      <button class="mclose" onclick="openClient('${clientName}')">← Back</button>
+      <span class="mtitle">Update Payment</span><span></span>
+    </div>
+    <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
+      <div style="width:54px;height:54px;border-radius:50%;background:${isCurrentlyPaid?'rgba(255,59,48,0.1)':'rgba(52,199,89,0.1)'};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+        <i class="ti ${actionIcon}" style="font-size:24px;color:${actionColor};"></i>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">${actionLabel}?</div>
+      <div style="background:var(--bg-secondary);border-radius:10px;padding:12px 16px;margin-bottom:18px;text-align:left;">
+        <div style="font-size:13px;color:var(--text);font-weight:600;">${txn.qty}m @ ₱${txn.rate}/m</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${txn.date} · ${fmt(txn.total)}</div>
+        <div style="margin-top:8px;"><span class="badge ${isCurrentlyPaid?'paid':'unpaid'}">${isCurrentlyPaid?'Currently Paid':'Currently Unpaid'}</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="openClient('${clientName}')">Cancel</button>
+        <button class="ibtn" style="background:${actionColor};color:#fff;border:none;" onclick="confirmToggleTxn('${clientName}',${txnIndex},'${newStatus}')">
+          <i class="ti ${actionIcon}"></i> ${actionLabel}
+        </button>
+      </div>
+    </div>`);
+}
+
+function confirmToggleTxn(clientName, txnIndex, newStatus) {
+  const txns = dtfData.filter(r => r.name===clientName);
+  const txn = txns[txnIndex];
+  if (!txn) return;
+  const wasPaid = txn.status==='pd';
+  const snapshot = snapshotState();
+  txn.status = newStatus;
+  const c = clientMap[clientName];
+  if (c) {
+    if (wasPaid && newStatus==='') c.unpaid += txn.total;
+    else if (!wasPaid && newStatus==='pd') c.unpaid = Math.max(0, c.unpaid - txn.total);
+  }
+  const statusLabel = newStatus==='pd' ? 'Paid' : 'Unpaid';
+  const wasLabel = wasPaid ? 'Paid' : 'Unpaid';
+  toast(newStatus==='pd' ? '✅ Marked as Paid!' : '🔴 Marked as Unpaid');
+  saveAppState();
+  recordAction('payment_change', `Payment updated — ${clientName}`, `${txn.qty}m · ${fmt(txn.total)} · ${wasLabel} → ${statusLabel} · ${txn.date}`, snapshot);
+  renderDash(); buildClientList(); renderOrders();
+  openClient(clientName);
+}
+
+function openClient(cOrName) {
+  const name = (typeof cOrName==='string') ? cOrName : cOrName.name;
+  const c = clientMap[name];
+  if (!c) return;
+  const txns = dtfData.filter(r => r.name===c.name);
+  openModal(`
+    <div class="mhdr">
+      <button class="mclose" onclick="closeModal()">← Back</button>
+      <span class="mtitle">${c.name}</span>
+      <span class="badge ${c.unpaid>0?'unpaid':'paid'}">${c.unpaid>0?'Has Balance':'All Paid'}</span>
+    </div>
+    <div class="fsec">
+      <div class="stats-grid" style="margin-bottom:14px;">
+        <div class="scard"><div class="slabel">Total Spent</div><div class="sval" style="font-size:16px;">${fmt(c.total)}</div></div>
+        <div class="scard"><div class="slabel">Orders</div><div class="sval" style="font-size:16px;">${c.orders}</div></div>
+      </div>
+      <div class="flabel" style="margin-bottom:6px;">Transaction History <span style="font-size:11px;color:var(--muted);font-weight:400;">· tap a row to change status</span></div>
+      <div class="clist" style="margin:0 0 12px;">
+        ${txns.map((r,i) => `
+          <div class="crow" onclick="toggleTxnStatus('${c.name.replace(/'/g,"\\'")}',${i})" style="cursor:pointer;" onmouseenter="this.style.background='var(--row-hover)'" onmouseleave="this.style.background=''">
+            <div class="ico" style="background:${r.status==='pd'?'var(--green)':'var(--red)'}"><i class="ti ti-${r.status==='pd'?'check':'clock'}"></i></div>
+            <div class="rmain"><div class="rt">${r.qty}m @ ₱${r.rate}/m</div><div class="rs">${r.date}</div></div>
+            <div class="rr" style="gap:6px;align-items:center;">
+              <span class="badge ${r.status==='pd'?'paid':'unpaid'}">${fmt(r.total)}</span>
+              <i class="ti ti-chevron-right" style="font-size:14px;color:var(--muted);"></i>
+            </div>
+          </div>`).join('')}
+      </div>
+      <button class="ibtn ibtn-bl" onclick="quickReceipt('${c.name}',${c.total});closeModal();"><i class="ti ti-receipt"></i> Generate Receipt</button>
+      <button class="ibtn ibtn-or" onclick="openAgent('followup');closeModal();" style="margin-top:6px;"><i class="ti ti-bell"></i> Send Follow-up</button>
+      <button class="ibtn ibtn-re" onclick="closeModal();confirmDeleteClient('${c.name.replace(/'/g,"\\'")}');" style="margin-top:6px;"><i class="ti ti-trash"></i> Delete Customer</button>
+    </div>`);
+}
+
+/* ── ORDERS ── */
+function renderOrders() {
+  const status = document.getElementById('ord-status').value;
+  const month  = document.getElementById('ord-month').value;
+  let data = dtfData.slice().reverse();
+  if (status==='pd')     data = data.filter(r => r.status==='pd');
+  if (status==='unpaid') data = data.filter(r => r.status!=='pd');
+  if (month)             data = data.filter(r => getMonthKey(r.date)===month);
+  document.getElementById('ordersBody').innerHTML = data.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td style="font-weight:600;">${r.name}</td>
+      <td>${r.qty}m</td>
+      <td>₱${r.rate}/m</td>
+      <td style="font-weight:700;">${fmt(r.total)}</td>
+      <td><span class="badge ${r.status==='pd'?'paid':'unpaid'}">${r.status==='pd'?'Paid':'Unpaid'}</span></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty">No orders found</td></tr>';
+}
+
+/* ── QUOTES / RECEIPTS ── */
+// FIX: 201m+ rate corrected from 150 to 130
+function getRate(m) {
+  if (m <= 19)  return 170;
+  if (m <= 50)  return 160;
+  if (m <= 100) return 150;
+  if (m <= 200) return 140;
+  return 130; // 201m+ bulk rate
+}
+
+function calcQuote() {
+  const m = parseFloat(document.getElementById('qMeters').value) || 0;
+  if (!m) { document.getElementById('qResult').style.display='none'; return; }
+  const r = getRate(m), t = m*r;
+  document.getElementById('qM').textContent = m+'m';
+  document.getElementById('qR').textContent = '₱'+r+'/m';
+  document.getElementById('qT').textContent = fmt(t);
+  document.getElementById('qResult').style.display = 'block';
+}
+
+function genReceipt() {
+  const client = document.getElementById('qClient').value || 'Customer';
+  const m = parseFloat(document.getElementById('qMeters').value) || 0;
+  const r = getRate(m), t = m*r;
+  const rn = Math.floor(Math.random()*900)+1100;
+  const now = new Date().toLocaleDateString('en-PH');
+  document.getElementById('receiptContent').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Receipt #</span><span>${rn}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Date</span><span>${now}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Customer</span><span style="font-weight:600;">${client}</span></div>
+    <div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>DTF Film</span><span>${m}m</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Rate per meter</span><span>₱${r}.00</span></div>
+    <div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;"><span>TOTAL</span><span style="color:var(--green);">${fmt(t)}</span></div>`;
+  document.getElementById('receiptCard').style.display = 'block';
+  document.getElementById('receiptEmpty').style.display = 'none';
+}
+
+function quickReceipt(name, total) {
+  showPage('quotes', null);
+  document.getElementById('qClient').value = name;
+  const rn = Math.floor(Math.random()*900)+1100;
+  const now = new Date().toLocaleDateString('en-PH');
+  document.getElementById('receiptContent').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Receipt #</span><span>${rn}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Date</span><span>${now}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Customer</span><span style="font-weight:600;">${name}</span></div>
+    <div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>DTF Film Service</span><span>—</span></div>
+    <div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;"><span>TOTAL</span><span style="color:var(--green);">${fmt(total)}</span></div>`;
+  document.getElementById('receiptCard').style.display = 'block';
+  document.getElementById('receiptEmpty').style.display = 'none';
+}
+
+function shareR() { alert('📤 Share via WhatsApp\nMessage will include:\n• Receipt number\n• Amount\n• BPI/BDO/GCash payment details'); }
+
+/* ── AI AGENTS ── */
+const agentDefs = {
+  expense: {
+    name:'Expense Logger', color:'var(--orange)', icon:'💸', needsCustomer:false,
+    welcome: () => 'Hi! I\'m your DTF Expense Logger 💸\n\nJust tell me what you spent:\n• "Bought DTF film roll ₱8,500 today"\n• "Paid electricity ₱2,200 May billing"\n• "Ink supplies ₱3,600 from supplier"',
+  },
+  quote: {
+    name:'DTF Quote Builder', color:'var(--accent)', icon:'📄', needsCustomer:true,
+    welcome: (c) => {
+      if (!c) return 'Hi! I\'m your DTF Quote Builder 📄\n\nPlease select a customer above first!';
+      const info = clientMap[c];
+      const lastOrder = dtfData.filter(d=>d.name===c).sort((a,b)=>b.date.localeCompare(a.date))[0];
+      return `Hi! I\'m your DTF Quote Builder 📄\n\nReady to quote for: ${c}\n• Past orders: ${info?.orders||0}\n• Last order: ${lastOrder?lastOrder.qty+'m @ ₱'+lastOrder.rate+'/m':'N/A'}\n\nHow many meters do they need?`;
+    },
+  },
+  followup: {
+    name:'Payment Chaser', color:'var(--red)', icon:'🔔', needsCustomer:true,
+    welcome: (c) => {
+      const unpaidClients = clients.filter(cl=>cl.unpaid>0);
+      if (!c) {
+        const list = unpaidClients.slice(0,5).map(cl=>`• ${cl.name} — ${fmt(cl.unpaid)}`).join('\n');
+        return `Hi! I\'m your Payment Chaser 🔔\n\nSelect a customer above to draft a follow-up.\n\nUnpaid balances:\n${list||'None — all paid! 🎉'}`;
+      }
+      const info = clientMap[c];
+      if (!info || info.unpaid===0) return `Hi! 👋\n\n${c} has no outstanding balance! ✅`;
+      return `Hi! I\'m your Payment Chaser 🔔\n\nSelected: ${c}\n💸 Unpaid: ${fmt(info.unpaid)}\n\nTell me the tone — friendly, firm, or urgent!`;
+    },
+  },
+  receipt: {
+    name:'Receipt Generator', color:'#AF52DE', icon:'🧾', needsCustomer:true,
+    welcome: (c) => {
+      if (!c) return 'Hi! I\'m your Receipt Generator 🧾\n\nSelect a customer above first!';
+      const info = clientMap[c];
+      return `Hi! I\'m your Receipt Generator 🧾\n\nReady for: ${c}\n• Total: ${fmt(info?.total||0)}\n\nTell me the meters or amount!`;
+    },
+  },
+  report: {
+    name:'Business Analyst', color:'#5AC8FA', icon:'📊', needsCustomer:false,
+    welcome: (c) => {
+      const totalRev    = dtfData.reduce((s,r)=>s+(r.status==='pd'?r.total:0),0);
+      const unpaidTotal = dtfData.reduce((s,r)=>s+(r.status!=='pd'?r.total:0),0);
+      if (c) {
+        const info = clientMap[c];
+        return `Hi! I\'m your Business Analyst 📊\n\nFocusing on: ${c}\n• Revenue: ${fmt(info?.total||0)}\n• Unpaid: ${fmt(info?.unpaid||0)}\n\nAsk me anything!`;
+      }
+      return `Hi! I\'m your Business Analyst 📊\n\nSnapshot:\n💰 Paid: ${fmt(totalRev)}\n❗ Outstanding: ${fmt(unpaidTotal)}\n🏆 Top customer: ${clients[0]?.name||'N/A'}\n\nAsk me anything about your business!`;
+    },
+  }
+};
+
+// FIX: 201m+ label corrected from ₱150/m to ₱130/m
+function getTierLabel(m) {
+  if (m<=9)   return '1–9m (₱170/m)';
+  if (m<=19)  return '10–19m (₱170/m)';
+  if (m<=50)  return '20–50m (₱160/m)';
+  if (m<=100) return '51–100m (₱150/m)';
+  if (m<=200) return '101–200m (₱140/m)';
+  return '201m+ (₱130/m)';
+}
+
+let agentSelectedCustomer = {};
+
+function openAgent(type) {
+  const a = agentDefs[type];
+  const pickerOptions = clients.map(c => {
+    const hasUnpaid = c.unpaid > 0;
+    return `<option value="${c.name}">${c.name}${hasUnpaid?' ⚠️ '+fmt(c.unpaid):''}</option>`;
+  }).join('');
+  const savedCustomer = agentSelectedCustomer[type] || '';
+  openModal(`
+    <div class="mhdr" style="background:${a.color||'var(--accent)'};border-radius:16px 16px 0 0;">
+      <button class="mclose" onclick="closeModal()" style="color:#fff;">← Back</button>
+      <span class="mtitle" style="color:#fff;">${a.name}</span>
+      <span class="ast">Online</span>
+    </div>
+    <div style="padding:10px 14px 6px;border-bottom:1px solid var(--border);background:var(--bg-secondary);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">
+        ${a.needsCustomer?'👤 Select Customer (required)':'👤 Focus on Customer (optional)'}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="agentCustomerPick" class="finput" style="margin:0;flex:1;font-size:13px;" onchange="onAgentCustomerChange('${type}')">
+          <option value="">— All customers / No focus —</option>
+          ${pickerOptions}
+        </select>
+        <button onclick="onAgentCustomerChange('${type}')" style="padding:8px 14px;border-radius:8px;background:${a.color||'var(--accent)'};color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:700;">Apply</button>
+      </div>
+    </div>
+    <div id="chatBox" style="padding:12px 14px;min-height:220px;max-height:320px;overflow-y:auto;">
+      <div style="display:flex;"><div class="cbub cai" id="welcomeMsg">${(a.welcome(savedCustomer||'')||'').replace(/\n/g,'<br>')}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;padding:8px 14px 4px;">
+      <input class="cinp" id="cInp" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMsg('${type}')"/>
+      <button class="csend" onclick="sendMsg('${type}')"><i class="ti ti-send"></i></button>
+    </div>
+    <div style="padding:6px 14px 8px;font-size:10px;color:var(--muted);text-align:center;">Powered by Gemini AI · Based on your DTF data</div>`);
+  if (savedCustomer) { const sel=document.getElementById('agentCustomerPick'); if(sel) sel.value=savedCustomer; }
+}
+
+function onAgentCustomerChange(type) {
+  const sel = document.getElementById('agentCustomerPick');
+  const c = sel ? sel.value : '';
+  agentSelectedCustomer[type] = c;
+  const a = agentDefs[type];
+  const box = document.getElementById('chatBox');
+  box.innerHTML = `<div style="display:flex;"><div class="cbub cai">${(a.welcome(c)||'').replace(/\n/g,'<br>')}</div></div>`;
+}
+
+function sendMsg(type) {
+  const inp = document.getElementById('cInp');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  const sel = document.getElementById('agentCustomerPick');
+  const c = sel ? sel.value : (agentSelectedCustomer[type]||'');
+  const box = document.getElementById('chatBox');
+  box.innerHTML += `<div style="display:flex;justify-content:flex-end;"><div class="cbub cus">${txt.replace(/</g,'&lt;')}</div></div>`;
+  inp.value = '';
+  box.scrollTop = box.scrollHeight;
+  const typingId = 'typing-'+Date.now();
+  box.innerHTML += `<div id="${typingId}" style="display:flex;"><div class="cbub cai" style="opacity:0.6;font-style:italic;">⏳ Thinking…</div></div>`;
+  box.scrollTop = box.scrollHeight;
+  const bubbles = box.querySelectorAll('.cbub');
+  const history = [];
+  bubbles.forEach(b => {
+    if (b.classList.contains('cus'))      history.push({role:'user',  text:b.innerText});
+    else if (b.classList.contains('cai')) history.push({role:'model', text:b.innerText});
+  });
+  fetch('/api/chat', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ agent:type, message:txt, customer:c, dtfData, clients, history:history.slice(-6) })
+  })
+  .then(r => r.json())
+  .then(data => {
+    const el = document.getElementById(typingId);
+    if (el) el.remove();
+    const reply = (data.reply||'No response.').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+    box.innerHTML += `<div style="display:flex;"><div class="cbub cai">${reply}</div></div>`;
+    box.scrollTop = box.scrollHeight;
+  })
+  .catch(err => {
+    const el = document.getElementById(typingId);
+    if (el) el.remove();
+    box.innerHTML += `<div style="display:flex;"><div class="cbub cai">⚠️ Could not reach AI. Check your connection.</div></div>`;
+    box.scrollTop = box.scrollHeight;
+  });
+}
+
+/* ── CLEAR ALL DATA ── */
+function confirmClearData() {
+  openModal(`
+    <div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);">
+      <button class="mclose" onclick="closeModal()">Cancel</button>
+      <span class="mtitle" style="color:var(--red);">Clear All Data</span><span></span>
+    </div>
+    <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,59,48,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <i class="ti ti-alert-triangle" style="font-size:28px;color:var(--red);"></i>
+      </div>
+      <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px;">Are you sure?</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;">This will permanently delete <strong>all customers, orders, and data</strong>.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="closeModal()">No, Keep Data</button>
+        <button class="ibtn ibtn-re" onclick="confirmClearData2()"><i class="ti ti-alert-triangle"></i> Yes, Continue</button>
+      </div>
+    </div>`);
+}
+
+function confirmClearData2() {
+  openModal(`
+    <div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.3);background:rgba(255,59,48,0.06);">
+      <button class="mclose" onclick="closeModal()">Cancel</button>
+      <span class="mtitle" style="color:var(--red);">⚠️ Final Warning</span><span></span>
+    </div>
+    <div class="fsec" style="text-align:center;padding:28px 18px 22px;">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px;">This is your last chance.</div>
+      <div style="background:rgba(255,59,48,0.08);border:1px solid rgba(255,59,48,0.25);border-radius:10px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:var(--red);line-height:1.6;">
+        <strong>${dtfData.length} order${dtfData.length!==1?'s':''}</strong> and <strong>${clients.length} customer${clients.length!==1?'s':''}</strong> will be permanently erased.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);font-weight:700;" onclick="closeModal()">← Cancel</button>
+        <button class="ibtn" style="background:var(--red);color:#fff;border:none;font-weight:700;" onclick="clearAllData()"><i class="ti ti-trash"></i> Delete Everything</button>
+      </div>
+    </div>`);
+}
+
+// FIX: removed undefined STORAGE_KEY/CUSTOMERS_KEY localStorage refs; added saveAppState() call
+function clearAllData() {
+  const orderCount  = dtfData.length;
+  const clientCount = clients.length;
+  dtfData.splice(0, dtfData.length);
+  clients.splice(0, clients.length);
+  savedCustomers.splice(0, savedCustomers.length);
+  Object.keys(clientMap).forEach(k => delete clientMap[k]);
+  // data lives on server — push the empty state now
+  saveAppState();
+  recordAction('clear_data', 'All data cleared', `${orderCount} order${orderCount!==1?'s':''} and ${clientCount} customer${clientCount!==1?'s':''} permanently deleted`, null);
+  closeModal();
+  populateMonthSelectors();
+  renderDash(); buildClientList(); renderOrders();
+  toast('🗑️ All data cleared');
+}
+
+/* ── ADD ORDER / CLIENT MODALS ── */
+function openAdd() { openNewTxn(); }
+
+function openNewTxn() {
+  openModal(`
+    <div class="mhdr">
+      <button class="mclose" onclick="closeModal()">Cancel</button>
+      <span class="mtitle">New Order</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">Auto-saves on submit</span>
+    </div>
+    <div class="fsec">
+      <div class="flabel">Customer Name</div>
+      <input class="finput" id="nt-name" placeholder="Type customer name…" list="cnames2">
+      <datalist id="cnames2">${clients.map(c=>`<option value="${c.name}">`).join('')}</datalist>
+      <div class="frow">
+        <div><div class="flabel">Meters</div><input class="finput" id="nt-qty" type="number" placeholder="0.00" oninput="autoRate()"></div>
+        <div><div class="flabel">Rate (₱/m)</div><input class="finput" id="nt-rate" type="number" placeholder="Auto"></div>
+      </div>
+      <div id="nt-calc" style="background:var(--bg-secondary);border-radius:8px;padding:10px;margin-bottom:8px;font-size:14px;display:none;">
+        Total: <strong id="nt-tot" style="color:var(--green);">₱0</strong>
+      </div>
+      <div class="flabel">Payment Status</div>
+      <select class="finput" id="nt-status">
+        <option value="pd">Paid ✓</option>
+        <option value="">Unpaid</option>
+      </select>
+      <div class="flabel">Date</div>
+      <input class="finput" id="nt-date" type="date">
+      <button class="ibtn ibtn-gr" onclick="addTxn()"><i class="ti ti-plus"></i> Add Order</button>
+    </div>`);
+  document.getElementById('nt-date').valueAsDate = new Date();
+}
+
+function autoRate() {
+  const m = parseFloat(document.getElementById('nt-qty').value) || 0;
+  const r = getRate(m);
+  document.getElementById('nt-rate').value = r;
+  document.getElementById('nt-calc').style.display = 'block';
+  document.getElementById('nt-tot').textContent = fmt(m*r);
+}
+
+function addTxn() {
+  const name   = document.getElementById('nt-name').value.trim() || 'Customer';
+  const qty    = parseFloat(document.getElementById('nt-qty').value) || 0;
+  const rate   = parseFloat(document.getElementById('nt-rate').value) || getRate(qty);
+  const total  = qty * rate;
+  const status = document.getElementById('nt-status').value;
+  const date   = document.getElementById('nt-date').value;
+  const snapshot = snapshotState();
+  dtfData.unshift({date, name, qty, rate, total, status});
+  if (!clientMap[name]) {
+    clientMap[name] = {name, total:0, orders:0, unpaid:0, lastDate:date, color:COLORS[clients.length%COLORS.length]};
+    clients.unshift(clientMap[name]);
+  }
+  clientMap[name].total  += total;
+  clientMap[name].orders++;
+  if (status !== 'pd') clientMap[name].unpaid += total;
+  if (!clientMap[name].lastDate || date > clientMap[name].lastDate) clientMap[name].lastDate = date;
+  clients.sort((a,b) => b.total - a.total);
+  populateMonthSelectors();
+  closeModal();
+  saveAppState();
+  recordAction('add_order', `Order added — ${name}`, `${qty}m @ ₱${rate}/m · ${fmt(total)} · ${status==='pd'?'Paid':'Unpaid'} · ${date}`, snapshot);
+  toast('Order added!');
+  renderDash(); buildClientList(); renderOrders();
+}
+
+function openAddClient() {
+  openModal(`
+    <div class="mhdr">
+      <button class="mclose" onclick="closeModal()">Cancel</button>
+      <span class="mtitle">New Customer</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">Auto-saves on submit</span>
+    </div>
+    <div class="fsec">
+      <div class="flabel">Customer / Business Name</div>
+      <input class="finput" id="nc-name" placeholder="e.g. Wearkap, JA Printing…">
+      <div class="flabel">Phone Number</div>
+      <input class="finput" id="nc-phone" placeholder="+63 9XX XXX XXXX">
+      <div class="flabel">Notes</div>
+      <textarea class="finput" id="nc-notes" rows="2" placeholder="Bulk buyer, VIP, referral…"></textarea>
+      <button class="ibtn ibtn-bl" onclick="addClientSave()"><i class="ti ti-user-plus"></i> Add Customer</button>
+    </div>`);
+}
+
+function addClientSave() {
+  const name  = document.getElementById('nc-name').value.trim() || 'New Customer';
+  const phone = document.getElementById('nc-phone').value.trim();
+  const notes = document.getElementById('nc-notes').value.trim();
+  const snapshot = snapshotState();
+  if (!clientMap[name]) {
+    clientMap[name] = {name, total:0, orders:0, unpaid:0, lastDate:new Date().toISOString().split('T')[0], color:COLORS[clients.length%COLORS.length]};
+    clients.unshift(clientMap[name]);
+  }
+  const existing = savedCustomers.find(c => c.name===name);
+  if (existing) { existing.phone=phone; existing.notes=notes; }
+  else savedCustomers.unshift({name, phone, notes});
+  buildClientList();
+  closeModal();
+  saveAppState();
+  recordAction('add_customer', `Customer added — ${name}`, `${phone?'Phone: '+phone:'No phone'} · ${notes?'Notes: '+notes:'No notes'}`, snapshot);
+  toast('Customer added!');
+}
+
+/* ── MODAL ── */
+function openModal(h) { document.getElementById('SHT').innerHTML=h; document.getElementById('OVL').classList.add('on'); }
+function closeModal()  { document.getElementById('OVL').classList.remove('on'); }
+
+/* ── RIPPLE ── */
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn,.ibtn');
+  if (!btn) return;
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple-effect';
+  const rect = btn.getBoundingClientRect();
+  ripple.style.left = (e.clientX-rect.left)+'px';
+  ripple.style.top  = (e.clientY-rect.top)+'px';
+  btn.appendChild(ripple);
+  ripple.addEventListener('animationend', () => ripple.remove());
+});
+
+/* ── IMPORT EXCEL ── */
+function importExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:false});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const allRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      if (!allRows.length) { toast('⚠️ No data found in file'); return; }
+      const snapshot = snapshotState();
+      let added=0, skipped=0;
+      allRows.forEach(row => {
+        const rawDate=row[0], rawName=row[1], rawQty=row[2], rawRate=row[3], rawTotal=row[4], rawStatus=row[5];
+        const name = String(rawName??'').trim();
+        if (['customer','name','client'].includes(name.toLowerCase())) { skipped++; return; }
+        if (!name) { skipped++; return; }
+        let dateStr = '';
+        if (rawDate && typeof rawDate==='number' && rawDate>1000) {
+          const d = new Date(Math.round((rawDate-25569)*86400*1000));
+          dateStr = d.toISOString().split('T')[0];
+        } else if (rawDate && String(rawDate).trim()) {
+          dateStr = String(rawDate).trim().slice(0,10);
+        } else {
+          dateStr = new Date().toISOString().split('T')[0];
+        }
+        const qty   = parseFloat(rawQty)  || 0;
+        const rate  = parseFloat(rawRate) || getRate(qty);
+        const total = parseFloat(rawTotal) || 0;
+        if (!total) { skipped++; return; }
+        const statusRaw = String(rawStatus||'').toLowerCase().trim();
+        const status = (statusRaw==='pd'||statusRaw==='paid'||statusRaw==='1'||statusRaw==='yes') ? 'pd' : '';
+        dtfData.push({date:dateStr, name, qty, rate, total, status});
+        if (!clientMap[name]) {
+          clientMap[name] = {name, total:0, orders:0, unpaid:0, lastDate:dateStr, color:COLORS[Object.keys(clientMap).length%COLORS.length]};
+          clients.push(clientMap[name]);
+        }
+        clientMap[name].total  += total;
+        clientMap[name].orders += 1;
+        if (status!=='pd') clientMap[name].unpaid += total;
+        if (dateStr > clientMap[name].lastDate) clientMap[name].lastDate = dateStr;
+        added++;
+      });
+      clients.sort((a,b) => b.total-a.total);
+      input.value = '';
+      populateMonthSelectors();
+      renderDash(); buildClientList(); renderOrders();
+      saveAppState();
+      recordAction('import', `Excel imported — ${added} orders`, `File: ${file.name} · ${skipped} rows skipped`, snapshot);
+      toast(skipped>0 ? `✅ Imported ${added} orders · ${skipped} rows skipped` : `✅ Imported ${added} orders!`);
+    } catch(err) {
+      console.error(err);
+      toast('❌ Could not read file. Check format.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function downloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['DATE','CUSTOMER','QTY','AMOUNT','TOTAL','STATUS'],
+    ['2026-01-15','Sample Customer',10,170,1700,'pd'],
+    ['2026-01-16','Another Client',5,170,850,''],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'DTF RECEIVE2026');
+  XLSX.writeFile(wb, 'dtf_import_template.xlsx');
+}
+
+/* ── INIT ── */
+document.addEventListener('DOMContentLoaded', async function() {
+  try { await loadSavedData(); }    catch(e) { console.error('loadSavedData error:', e); }
+  try { loadHistory(); }            catch(e) { console.error('loadHistory error:', e); }
+  try { populateMonthSelectors(); } catch(e) { console.error('populateMonthSelectors error:', e); }
+  try { renderDash(); }             catch(e) { console.error('renderDash error:', e); }
+  try { buildClientList(); }        catch(e) { console.error('buildClientList error:', e); }
+  try { renderOrders(); }           catch(e) { console.error('renderOrders error:', e); }
+
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'clients'")) {
+      btn.addEventListener('click', () => {
+        setTimeout(() => { const hint=document.getElementById('importHint'); if(hint) hint.style.display='block'; }, 50);
+      });
+    }
+  });
+});
+</script>
+</body>
+</html>

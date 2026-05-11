@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login · passprints. DTF CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#071026 0%,#0f1b35 50%,#1a0a3d 100%);padding:24px;}
+  .card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:48px 40px;max-width:420px;width:100%;text-align:center;backdrop-filter:blur(12px);}
+  .logo{font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;margin-bottom:4px;}
+  .logo span{color:#5b4bff;}
+  .tagline{font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:40px;}
+  .divider{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:32px 0;}
+  .google-btn{display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;color:#1a1a2e;border:none;border-radius:12px;padding:14px 24px;width:100%;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;}
+  .google-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(91,75,255,0.25);}
+  .google-btn img{width:20px;height:20px;}
+  .error{background:rgba(255,59,48,0.12);border:1px solid rgba(255,59,48,0.3);border-radius:10px;padding:12px 16px;color:#ff6b6b;font-size:13px;margin-bottom:20px;text-align:left;}
+  .warn{background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.3);border-radius:10px;padding:12px 16px;color:#ffaa44;font-size:13px;margin-bottom:20px;text-align:left;}
+  .badge-row{display:flex;gap:8px;justify-content:center;margin-bottom:32px;flex-wrap:wrap;}
+  .badge{background:rgba(91,75,255,0.15);border:1px solid rgba(91,75,255,0.25);border-radius:20px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.65);font-weight:600;}
+  h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;}
+  p{font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">passprints<span>.</span></div>
+  <div class="tagline">DTF Film Printing CRM</div>
+  <div class="badge-row">
+    <span class="badge">📊 Sales Tracker</span>
+    <span class="badge">🤖 AI Agents</span>
+    <span class="badge">💰 Quotes & Receipts</span>
+  </div>
+
+  {% if error %}
+  <div class="error">⚠️ Login error: {{ error }}</div>
+  {% endif %}
+
+  {% if not configured %}
+  <div class="warn">
+    ⚙️ <strong>OAuth not configured.</strong><br>
+    Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> in your <code>.env</code> file.<br>
+    See README for setup steps.
+  </div>
+  {% else %}
+  <h2>Create account or sign in</h2>
+  <p style="margin-bottom:24px;">Use your Gmail account to get started. New users will be reviewed for access by the shop owner.</p>
+  <a href="/auth/google" class="google-btn">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+    Continue with Gmail
+  </a>
+  {% endif %}
+
+  <hr class="divider">
+  <p style="font-size:11px;color:rgba(255,255,255,0.25);">Your session stays active until you sign out. Data is stored locally in your browser.</p>
+</div>
+</body>
+</html>

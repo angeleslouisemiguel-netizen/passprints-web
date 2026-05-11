@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel · passprints.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;min-height:100vh;background:linear-gradient(180deg,#071026 0%,#0f1b35 100%);color:#e8edf5;padding:24px;font-size:14px;}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;}
+  .logo{font-size:20px;font-weight:800;color:#fff;} .logo span{color:#5b4bff;}
+  .nav-links{display:flex;gap:10px;}
+  .nav-link{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 14px;color:rgba(255,255,255,0.65);text-decoration:none;font-size:13px;font-weight:600;}
+  .nav-link:hover{background:rgba(255,255,255,0.10);}
+  .section{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:24px;margin-bottom:24px;}
+  .section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,255,255,0.4);margin-bottom:16px;}
+  .user-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+  .user-row:last-child{border-bottom:none;padding-bottom:0;}
+  .avatar{width:36px;height:36px;border-radius:50%;background:#1a2845;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#5b4bff;flex-shrink:0;}
+  .avatar img{width:36px;height:36px;border-radius:50%;object-fit:cover;}
+  .user-info{flex:1;min-width:0;}
+  .user-name{font-weight:600;color:#e8edf5;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .user-email{font-size:12px;color:rgba(255,255,255,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .badges{display:flex;gap:6px;flex-shrink:0;}
+  .badge{border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;}
+  .badge-owner{background:rgba(255,210,74,0.15);color:#ffd24a;border:1px solid rgba(255,210,74,0.25);}
+  .badge-admin{background:rgba(91,75,255,0.15);color:#9c8fff;border:1px solid rgba(91,75,255,0.25);}
+  .badge-allowed{background:rgba(52,199,89,0.15);color:#34C759;border:1px solid rgba(52,199,89,0.25);}
+  .badge-pending{background:rgba(255,149,0,0.15);color:#FF9500;border:1px solid rgba(255,149,0,0.25);}
+  .actions{display:flex;gap:6px;flex-shrink:0;}
+  .btn{border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.15s;}
+  .btn:hover{opacity:0.8;}
+  .btn-allow{background:rgba(52,199,89,0.2);color:#34C759;}
+  .btn-revoke{background:rgba(255,59,48,0.2);color:#FF3B30;}
+  .btn-admin{background:rgba(91,75,255,0.2);color:#9c8fff;}
+  .btn-del{background:rgba(255,59,48,0.1);color:#ff6b6b;}
+  .add-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .finput{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#e8edf5;font-size:13px;font-family:inherit;outline:none;}
+  .finput::placeholder{color:rgba(255,255,255,0.25);}
+  .finput:focus{border-color:rgba(91,75,255,0.5);background:rgba(255,255,255,0.07);}
+  .btn-primary{background:#5b4bff;color:#fff;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;border:none;cursor:pointer;}
+  .btn-primary:hover{background:#4a3bee;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#5b4bff;color:#fff;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:600;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;}
+  .toast.show{opacity:1;}
+  .empty{text-align:center;color:rgba(255,255,255,0.3);padding:24px 0;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">passprints<span>.</span> <span style="font-size:14px;color:rgba(255,255,255,0.4);font-weight:400;">Admin Panel</span></div>
+  <div class="nav-links">
+    <a href="/" class="nav-link"><i class="ti ti-arrow-left"></i> Back to CRM</a>
+    <a href="/logout" class="nav-link"><i class="ti ti-logout"></i> Logout</a>
+  </div>
+</div>
+
+<!-- Add user -->
+<div class="section">
+  <div class="section-title">Add / Approve User</div>
+  <div class="add-row">
+    <input class="finput" id="addEmail" placeholder="user@gmail.com" style="flex:2;min-width:180px;">
+    <input class="finput" id="addName" placeholder="Display name (optional)" style="flex:2;min-width:150px;">
+    <label style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.6);font-size:13px;white-space:nowrap;">
+      <input type="checkbox" id="addAdmin"> Make admin
+    </label>
+    <button class="btn-primary" onclick="addUser()"><i class="ti ti-user-plus"></i> Add User</button>
+  </div>
+</div>
+
+<!-- Users list -->
+<div class="section">
+  <div class="section-title">All Users ({{ users|length }})</div>
+  <div id="userList">
+    {% for email, u in users.items() %}
+    <div class="user-row" id="row-{{ loop.index }}">
+      <div class="avatar">
+        {% if u.picture %}<img src="{{ u.picture }}" alt="">
+        {% else %}{{ (u.name or email)[0]|upper }}{% endif %}
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ u.name or email }}</div>
+        <div class="user-email">{{ email }}</div>
+      </div>
+      <div class="badges">
+        {% if email == owner_email %}<span class="badge badge-owner">👑 Owner</span>{% endif %}
+        {% if u.admin and email != owner_email %}<span class="badge badge-admin" id="abadge-{{ loop.index }}">🔑 Admin</span>{% endif %}
+        {% if u.allowed %}<span class="badge badge-allowed" id="sbadge-{{ loop.index }}">✓ Allowed</span>
+        {% else %}<span class="badge badge-pending" id="sbadge-{{ loop.index }}">⏳ Pending</span>{% endif %}
+      </div>
+      <div class="actions">
+        {% if email != owner_email %}
+          {% if u.allowed %}
+          <button class="btn btn-revoke" onclick="toggleAllow('{{ email }}', false, {{ loop.index }})">Revoke</button>
+          {% else %}
+          <button class="btn btn-allow" onclick="toggleAllow('{{ email }}', true, {{ loop.index }})">Allow</button>
+          {% endif %}
+          {% if u.admin %}
+          <button class="btn btn-admin" onclick="toggleAdmin('{{ email }}', false, {{ loop.index }})">Unadmin</button>
+          {% else %}
+          <button class="btn btn-admin" onclick="toggleAdmin('{{ email }}', true, {{ loop.index }})">Make Admin</button>
+          {% endif %}
+          <button class="btn btn-del" onclick="deleteUser('{{ email }}', {{ loop.index }})"><i class="ti ti-trash"></i></button>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">No users yet.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = ok ? '#5b4bff' : '#FF3B30';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+async function toggleAllow(email, allow, idx) {
+  const r = await fetch('/admin/user/allow', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email, allow})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    const b = document.getElementById('sbadge-'+idx);
+    if (b) {
+      b.className = allow ? 'badge badge-allowed' : 'badge badge-pending';
+      b.textContent = allow ? '✓ Allowed' : '⏳ Pending';
+    }
+    toast(allow ? 'Access granted!' : 'Access revoked.');
+    setTimeout(()=>location.reload(), 800);
+  } else toast(d.msg||'Error', false);
+}
+
+async function toggleAdmin(email, admin, idx) {
+  const r = await fetch('/admin/user/admin', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email, admin})
+  });
+  const d = await r.json();
+  if (d.ok) { toast(admin?'Made admin!':'Admin removed.'); setTimeout(()=>location.reload(),800); }
+  else toast(d.msg||'Error', false);
+}
+
+async function deleteUser(email, idx) {
+  if (!confirm(`Remove ${email} from the system?`)) return;
+  const r = await fetch('/admin/user/delete', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    const row = document.getElementById('row-'+idx);
+    if (row) row.remove();
+    toast('User removed.');
+  } else toast(d.msg||'Error', false);
+}
+
+async function addUser() {
+  const email = document.getElementById('addEmail').value.trim().toLowerCase();
+  const name  = document.getElementById('addName').value.trim();
+  const admin = document.getElementById('addAdmin').checked;
+  if (!email) { toast('Enter an email address.', false); return; }
+  const r = await fetch('/admin/user/add', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email, name, admin})
+  });
+  const d = await r.json();
+  if (d.ok) { toast('User added!'); setTimeout(()=>location.reload(),800); }
+  else toast(d.msg||'Error', false);
+}
+</script>
+</body>
+</html>
