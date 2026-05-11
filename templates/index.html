@@ -348,6 +348,47 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             animation: floatY 4s ease-in-out infinite;
             flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        /* ── ACCOUNT DROPDOWN ── */
+        .account-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 44px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            min-width: 170px;
+            z-index: 500;
+            overflow: hidden;
+            animation: fadeUp 180ms cubic-bezier(.2,.9,.2,1) both;
+        }
+
+        .account-menu.open {
+            display: block;
+        }
+
+        .account-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            text-decoration: none;
+            transition: background 0.12s;
+        }
+
+        .account-menu a:hover {
+            background: var(--row-hover);
+        }
+
+        .account-menu a + a {
+            border-top: 1px solid var(--border);
         }
 
         .page {
@@ -1294,28 +1335,6 @@
                 <i class="ti ti-history"></i><span>History</span>
                 <span id="history-badge" style="display:none;margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:99px;padding:1px 6px;"></span>
             </button>
-
-            <div style="margin-top:auto;padding:12px 0 0;border-top:1px solid var(--border);">
-                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-bottom:6px;">
-                    {% if user.picture %}
-                    <img src="{{ user.picture }}" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);" alt="">
-                    {% else %}
-                    <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;">{{ user.name[0]|upper }}</div>
-                    {% endif %}
-                    <div style="min-width:0;flex:1;">
-                        <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.name }}</div>
-                        <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.email }}</div>
-                    </div>
-                </div>
-                {% if admin %}
-                <a href="/admin" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-dim);text-decoration:none;margin-bottom:2px;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
-                    <i class="ti ti-settings" style="font-size:15px;color:var(--accent);"></i> Admin Panel
-                </a>
-                {% endif %}
-                <a href="/logout" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-dim);text-decoration:none;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
-                    <i class="ti ti-logout" style="font-size:15px;color:var(--red);"></i> Sign Out
-                </a>
-            </div>
         </aside>
 
         <!-- ── MAIN ── -->
@@ -1329,7 +1348,20 @@
                     <select id="monthSel" class="select-sm" onchange="renderDash()">
                         <option value="all">All months</option>
                     </select>
-                    <div class="avatar" title="You"></div>
+                    <!-- ── AVATAR + ACCOUNT DROPDOWN ── -->
+                    <div style="position:relative;">
+                        <div class="avatar" id="avatarBtn" title="Account" onclick="toggleAccountMenu()"></div>
+                        <div class="account-menu" id="accountMenu">
+                            {% if admin %}
+                            <a href="/admin">
+                                <i class="ti ti-settings" style="font-size:16px;color:var(--accent);"></i> Admin Panel
+                            </a>
+                            {% endif %}
+                            <a href="/logout">
+                                <i class="ti ti-logout" style="font-size:16px;color:var(--red);"></i> Sign Out
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="metric-grid" id="metrics"></div>
                 <div class="dash-grid">
@@ -1479,7 +1511,6 @@
                                     <div style="font-size:14px;font-weight:800;color:var(--magenta);">₱140</div>
                                     <div style="font-size:9px;color:var(--muted);margin-top:1px;">/meter</div>
                                 </div>
-                                <!-- FIX: was ₱150, now correctly ₱130 -->
                                 <div style="background:var(--card-bg);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border);">
                                     <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">201m+</div>
                                     <div style="font-size:14px;font-weight:800;color:var(--green);">₱130</div>
@@ -1556,6 +1587,19 @@
             if (checkbox.checked) { html.setAttribute('data-theme', 'dark'); thumb.textContent = '🌙'; }
             else { html.setAttribute('data-theme', 'light'); thumb.textContent = '☀️'; }
         }
+
+        /* ── ACCOUNT MENU ── */
+        function toggleAccountMenu() {
+            const menu = document.getElementById('accountMenu');
+            menu.classList.toggle('open');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#avatarBtn') && !e.target.closest('#accountMenu')) {
+                const menu = document.getElementById('accountMenu');
+                if (menu) menu.classList.remove('open');
+            }
+        });
 
         /* ── DATA (all server-side) ── */
         const HISTORY_KEY = 'passprintsDtfHistory';
@@ -2017,13 +2061,12 @@
         }
 
         /* ── QUOTES / RECEIPTS ── */
-        // FIX: 201m+ rate corrected from 150 to 130
         function getRate(m) {
             if (m <= 19) return 170;
             if (m <= 50) return 160;
             if (m <= 100) return 150;
             if (m <= 200) return 140;
-            return 130; // 201m+ bulk rate
+            return 130;
         }
 
         function calcQuote() {
@@ -2112,7 +2155,6 @@
         </div>`);
         }
 
-        // FIX: removed undefined STORAGE_KEY/CUSTOMERS_KEY localStorage refs; added saveAppState() call
         function clearAllData() {
             const orderCount = dtfData.length;
             const clientCount = clients.length;
@@ -2120,7 +2162,6 @@
             clients.splice(0, clients.length);
             savedCustomers.splice(0, savedCustomers.length);
             Object.keys(clientMap).forEach(k => delete clientMap[k]);
-            // data lives on server — push the empty state now
             saveAppState();
             recordAction('clear_data', 'All data cleared', `${orderCount} order${orderCount !== 1 ? 's' : ''} and ${clientCount} customer${clientCount !== 1 ? 's' : ''} permanently deleted`, null);
             closeModal();
