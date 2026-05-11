@@ -5,14 +5,16 @@ Features:
 • Gmail OAuth2 login — session persists across refreshes
 • Admin panel — owner can whitelist users and grant admin rights
 • Gemini AI agents — key embedded server-side, never exposed
+• JSONBin.io for persistent cloud storage (works on Render free tier)
 • All original CRM features intact
 
 Setup:
 1. pip install -r requirements.txt
 2. Create Google OAuth credentials at console.cloud.google.com
    (Web app, add http://localhost:5000/auth/callback as redirect URI)
-3. Copy .env.example → .env and fill in values
-4. python run.py
+3. Create a free bin at jsonbin.io — get your Bin ID and API key
+4. Copy .env.example → .env and fill in values
+5. python run.py
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -28,58 +30,152 @@ app = Flask(__name__)
 
 # ── Secret key ────────────────────────────────────────────────
 # IMPORTANT: set FLASK_SECRET in your .env — never use the default in production
-_default_secret = secrets.token_hex(32)  # random per-process fallback (sessions won't persist across restarts without env var)
+_default_secret = secrets.token_hex(32)  # random per-process fallback
 app.secret_key = os.environ.get("FLASK_SECRET") or _default_secret
 app.permanent_session_lifetime = timedelta(days=30)
 
 # ── Gemini ────────────────────────────────────────────────────
-# BUG FIX: removed hardcoded API key — must come from environment only
+# FIX: use gemini-2.0-flash — gemini-1.5-flash is no longer available on v1beta
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+    gemini_model = genai.GenerativeModel("gemini-2.0-flash")
 else:
     gemini_model = None
 
 # ── Google OAuth config ───────────────────────────────────────
-# BUG FIX: removed hardcoded client ID/secret — must come from environment only
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-# BUG FIX: default REDIRECT_URI to localhost for local development
 REDIRECT_URI = os.environ.get("REDIRECT_URI", "http://localhost:5000/auth/callback")
 
-# ── Owner / whitelist config ──────────────────────────────────
+# ── Owner config ──────────────────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
-USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
+
+# ── JSONBin.io config ─────────────────────────────────────────
+# Two separate bins — one for login/admin users, one for CRM customer data.
+# Create a free account at jsonbin.io, make TWO bins (each starting with {}),
+# and set these env vars in Render:
+#
+#   JSONBIN_API_KEY        — your JSONBin Master Key (same key works for all bins)
+#   JSONBIN_USERS_BIN_ID   — Bin ID for users/admin data
+#   JSONBIN_CRM_BIN_ID     — Bin ID for orders/customers CRM data
+
+JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY", "")
+JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "")
+JSONBIN_CRM_BIN_ID   = os.environ.get("JSONBIN_CRM_BIN_ID", "")
+
+JSONBIN_USERS_URL = f"https://api.jsonbin.io/v3/b/{JSONBIN_USERS_BIN_ID}" if JSONBIN_USERS_BIN_ID else ""
+JSONBIN_CRM_URL   = f"https://api.jsonbin.io/v3/b/{JSONBIN_CRM_BIN_ID}"   if JSONBIN_CRM_BIN_ID   else ""
+
+# Fallback local files (used when JSONBin is not configured — local dev)
+USERS_FILE    = os.path.join(os.path.dirname(__file__), "users.json")
+CRM_DATA_FILE = os.path.join(os.path.dirname(__file__), "crm_data.json")
 
 
-def load_users():
-    if not os.path.exists(USERS_FILE):
-        data = {}
-        if OWNER_EMAIL:
-            data[OWNER_EMAIL] = {
-                "email": OWNER_EMAIL, "name": "Owner",
-                "admin": True, "allowed": True
-            }
-            _save_users(data)
-        return data
+# ── JSONBin helpers ───────────────────────────────────────────
+
+def _jb_headers():
+    return {
+        "Content-Type":     "application/json",
+        "X-Master-Key":     JSONBIN_API_KEY,
+        "X-Bin-Versioning": "false",  # always overwrite, no version history
+    }
+
+
+def _jb_load(url, label="data"):
+    """Load a bin's record dict. Returns {} on any error."""
     try:
-        with open(USERS_FILE) as f:
+        r = http_requests.get(url + "/latest", headers=_jb_headers(), timeout=10)
+        r.raise_for_status()
+        return r.json().get("record", {})
+    except Exception as e:
+        print(f"JSONBin load error ({label}): {e}")
+        return {}
+
+
+def _jb_save(url, data, label="data"):
+    """Save (overwrite) a bin with data. Logs errors but doesn't raise."""
+    try:
+        r = http_requests.put(url, json=data, headers=_jb_headers(), timeout=10)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"JSONBin save error ({label}): {e}")
+
+
+def _local_load(path):
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path) as f:
             return json.load(f)
     except Exception:
         return {}
 
 
-def _save_users(data):
-    # Write atomically to avoid corruption on concurrent requests
-    tmp = USERS_FILE + ".tmp"
+def _local_save(path, data):
+    tmp = path + ".tmp"
     with open(tmp, "w") as f:
         json.dump(data, f, indent=2)
-    os.replace(tmp, USERS_FILE)
+    os.replace(tmp, path)
+
+
+# ── Users bin (login / admin) ─────────────────────────────────
+
+def load_users():
+    """Load users from JSONBin Users bin, or local file in dev."""
+    if JSONBIN_USERS_URL and JSONBIN_API_KEY:
+        data = _jb_load(JSONBIN_USERS_URL, "users")
+        # Auto-seed owner on first load
+        if OWNER_EMAIL and OWNER_EMAIL not in data:
+            data[OWNER_EMAIL] = {
+                "email": OWNER_EMAIL, "name": "Owner",
+                "admin": True, "allowed": True
+            }
+            save_users(data)
+        return data
+    # Local fallback
+    data = _local_load(USERS_FILE)
+    if OWNER_EMAIL and OWNER_EMAIL not in data:
+        data[OWNER_EMAIL] = {
+            "email": OWNER_EMAIL, "name": "Owner",
+            "admin": True, "allowed": True
+        }
+        _local_save(USERS_FILE, data)
+    return data
 
 
 def save_users(data):
-    _save_users(data)
+    """Save users to JSONBin Users bin, or local file in dev."""
+    if JSONBIN_USERS_URL and JSONBIN_API_KEY:
+        _jb_save(JSONBIN_USERS_URL, data, "users")
+    else:
+        _local_save(USERS_FILE, data)
+
+
+# ── CRM bin (orders / customers) ─────────────────────────────
+
+def load_crm():
+    """Load CRM order records from JSONBin CRM bin, or local file in dev.
+    Returns a list of order dicts."""
+    if JSONBIN_CRM_URL and JSONBIN_API_KEY:
+        data = _jb_load(JSONBIN_CRM_URL, "crm")
+        # Bin may be seeded with {} — normalise to list
+        if isinstance(data, dict):
+            return data.get("orders", [])
+        return data if isinstance(data, list) else []
+    data = _local_load(CRM_DATA_FILE)
+    if isinstance(data, dict):
+        return data.get("orders", [])
+    return data if isinstance(data, list) else []
+
+
+def save_crm(orders):
+    """Save CRM order records. Always stored as {"orders": [...]}."""
+    payload = {"orders": orders}
+    if JSONBIN_CRM_URL and JSONBIN_API_KEY:
+        _jb_save(JSONBIN_CRM_URL, payload, "crm")
+    else:
+        _local_save(CRM_DATA_FILE, payload)
 
 
 def get_user(email):
@@ -396,6 +492,66 @@ def admin_add_user():
         users[email]["admin"]   = is_adm
     save_users(users)
     return jsonify({"ok": True})
+
+
+# ── Routes — CRM Data (orders / customers) ───────────────────
+
+@app.route("/api/crm", methods=["GET"])
+@access_required
+def api_crm_load():
+    """Return all CRM order records as a JSON array."""
+    orders = load_crm()
+    return jsonify({"ok": True, "orders": orders})
+
+
+@app.route("/api/crm", methods=["POST"])
+@access_required
+def api_crm_save():
+    """Replace the full CRM order list with the posted array."""
+    data = request.json or {}
+    orders = data.get("orders", [])
+    if not isinstance(orders, list):
+        return jsonify({"ok": False, "msg": "orders must be a list"}), 400
+    save_crm(orders)
+    return jsonify({"ok": True, "saved": len(orders)})
+
+
+@app.route("/api/crm/order", methods=["POST"])
+@access_required
+def api_crm_add_order():
+    """Append a single order record to the CRM list."""
+    order = request.json or {}
+    if not order:
+        return jsonify({"ok": False, "msg": "No order data"}), 400
+    orders = load_crm()
+    orders.append(order)
+    save_crm(orders)
+    return jsonify({"ok": True, "total": len(orders)})
+
+
+@app.route("/api/crm/order/<int:index>", methods=["PUT"])
+@access_required
+def api_crm_update_order(index):
+    """Update a single order by its list index."""
+    updated = request.json or {}
+    orders = load_crm()
+    if index < 0 or index >= len(orders):
+        return jsonify({"ok": False, "msg": "Index out of range"}), 404
+    orders[index] = updated
+    save_crm(orders)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/crm/order/<int:index>", methods=["DELETE"])
+@access_required
+def api_crm_delete_order(index):
+    """Delete a single order by its list index."""
+    orders = load_crm()
+    if index < 0 or index >= len(orders):
+        return jsonify({"ok": False, "msg": "Index out of range"}), 404
+    orders.pop(index)
+    save_crm(orders)
+    return jsonify({"ok": True, "remaining": len(orders)})
 
 
 # ── Routes — AI Chat ──────────────────────────────────────────
