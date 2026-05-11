@@ -427,27 +427,6 @@
       <span id="history-badge" style="display:none;margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:99px;padding:1px 6px;"></span>
     </button>
 
-    <div style="margin-top:auto;padding:12px 0 0;border-top:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-bottom:6px;">
-        {% if user.picture %}
-        <img src="{{ user.picture }}" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);" alt="">
-        {% else %}
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;">{{ user.name[0]|upper }}</div>
-        {% endif %}
-        <div style="min-width:0;flex:1;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.name }}</div>
-          <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.email }}</div>
-        </div>
-      </div>
-      {% if admin %}
-      <a href="/admin" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-dim);text-decoration:none;margin-bottom:2px;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
-        <i class="ti ti-settings" style="font-size:15px;color:var(--accent);"></i> Admin Panel
-      </a>
-      {% endif %}
-      <a href="/logout" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-dim);text-decoration:none;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
-        <i class="ti ti-logout" style="font-size:15px;color:var(--red);"></i> Sign Out
-      </a>
-    </div>
   </aside>
 
   <!-- ── MAIN ── -->
@@ -461,45 +440,6 @@
         <select id="monthSel" class="select-sm" onchange="renderDash()">
           <option value="all">All months</option>
         </select>
-        <div style="position:relative;" id="acctWrap">
-          <div onclick="toggleAcct()" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta));display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.2);cursor:pointer;flex-shrink:0;overflow:hidden;border:2px solid transparent;transition:border-color 0.2s;" title="Account Center" id="acctBtn">
-            {% if user.picture %}
-            <img src="{{ user.picture }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" referrerpolicy="no-referrer" alt="">
-            {% else %}
-            <span style="font-weight:800;font-size:13px;color:#fff;">{{ user.name[0]|upper }}</span>
-            {% endif %}
-          </div>
-          <div id="acctMenu" style="display:none;position:absolute;top:42px;right:0;background:var(--panel);border:1px solid var(--border-strong);border-radius:14px;min-width:230px;box-shadow:0 12px 40px rgba(0,0,0,0.18);z-index:999;overflow:hidden;">
-            <div style="padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
-              <div style="width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,var(--cyan),var(--magenta));display:flex;align-items:center;justify-content:center;">
-                {% if user.picture %}
-                <img src="{{ user.picture }}" style="width:100%;height:100%;object-fit:cover;" referrerpolicy="no-referrer" alt="">
-                {% else %}
-                <span style="font-weight:800;font-size:15px;color:#fff;">{{ user.name[0]|upper }}</span>
-                {% endif %}
-              </div>
-              <div style="min-width:0;">
-                <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.name }}</div>
-                <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.email }}</div>
-                <span style="display:inline-block;margin-top:4px;padding:1px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.04em;background:{% if admin %}rgba(91,75,255,0.15){% else %}rgba(0,168,255,0.12){% endif %};color:{% if admin %}var(--accent){% else %}var(--accent-2){% endif %};">{% if admin %}Admin{% else %}Staff{% endif %}</span>
-              </div>
-            </div>
-            <div style="padding:8px;">
-              <div onclick="syncSheet()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
-                <i class="ti ti-refresh" style="font-size:16px;color:var(--green);"></i> Sync from Google Sheet
-              </div>
-              {% if admin %}
-              <a href="/admin" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;" onmouseover="this.style.background='var(--row-hover)'" onmouseout="this.style.background=''">
-                <i class="ti ti-settings" style="font-size:16px;color:var(--accent);"></i> Admin Panel
-              </a>
-              {% endif %}
-              <div style="height:1px;background:var(--border);margin:4px 0;"></div>
-              <a href="/logout" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--red);text-decoration:none;" onmouseover="this.style.background='var(--unpaid-card-hover)'" onmouseout="this.style.background=''">
-                <i class="ti ti-logout" style="font-size:16px;"></i> Sign Out
-              </a>
-            </div>
-          </div>
-        </div>
       </div>
       <div class="metric-grid" id="metrics"></div>
       <div class="dash-grid">
@@ -806,7 +746,7 @@ const HISTORY_ICONS = {
   payment_change:  { icon: 'ti-credit-card',     color: 'var(--cyan)',   label: 'Payment Updated' },
   delete_customer: { icon: 'ti-user-minus',      color: 'var(--red)',    label: 'Customer Deleted' },
   clear_data:      { icon: 'ti-trash',           color: 'var(--red)',    label: 'All Data Cleared' },
-  import:          { icon: 'ti-file-spreadsheet',color: 'var(--orange)', label: 'Data Imported' },
+  import:          { icon: 'ti-file-spreadsheet', color: 'var(--orange)', label: 'Data Imported' },
 };
 
 function renderHistoryPage() {
@@ -1567,6 +1507,7 @@ document.addEventListener('click', function(e) {
   ripple.addEventListener('animationend', () => ripple.remove());
 });
 
+
 /* ── IMPORT EXCEL ── */
 function importExcel(input) {
   const file = input.files[0];
@@ -1635,123 +1576,6 @@ function downloadTemplate() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'DTF RECEIVE2026');
   XLSX.writeFile(wb, 'dtf_import_template.xlsx');
-}
-
-/* ── ACCOUNT CENTER ── */
-function toggleAcct() {
-  const m = document.getElementById('acctMenu');
-  m.style.display = m.style.display === 'none' ? 'block' : 'none';
-}
-document.addEventListener('click', function(e) {
-  const wrap = document.getElementById('acctWrap');
-  if (wrap && !wrap.contains(e.target)) {
-    const m = document.getElementById('acctMenu');
-    if (m) m.style.display = 'none';
-  }
-});
-
-/* ── GOOGLE SHEET SYNC ── */
-async function syncSheet() {
-  const m = document.getElementById('acctMenu');
-  if (m) m.style.display = 'none';
-
-  toast('🔄 Syncing from Google Sheet…');
-
-  // Direct CSV export from Google Sheets — sheet must be shared "Anyone with link can view"
-  const SHEET_ID  = '1WC8nUW7_07dPmPetNCtHzeAXkkulDPzw';
-  const SHEET_GID = '496204286';
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
-
-  try {
-    const res = await fetch(csvUrl);
-    if (!res.ok) throw new Error(`Sheet returned HTTP ${res.status}. Make sure it is shared as "Anyone with the link can view".`);
-    const text = await res.text();
-
-    // Check we got CSV not HTML (login redirect)
-    if (text.trim().startsWith('<')) {
-      throw new Error('Sheet is not public. Go to Google Sheets → Share → Anyone with the link → Viewer.');
-    }
-
-    // Parse CSV
-    const rows = text.trim().split('\n').map(line => {
-      // Handle quoted fields with commas inside
-      const result = [];
-      let cur = '', inQ = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') { inQ = !inQ; }
-        else if (ch === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
-        else { cur += ch; }
-      }
-      result.push(cur.trim());
-      return result;
-    });
-
-    if (rows.length < 2) { toast('⚠️ No data rows found in sheet'); return; }
-
-    // Detect header row (first row)
-    const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]/g,''));
-    const col = (row, ...names) => {
-      for (const n of names) {
-        const idx = headers.findIndex(h => h.includes(n));
-        if (idx !== -1 && idx < row.length) return (row[idx]||'').replace(/[₱,]/g,'').trim();
-      }
-      return '';
-    };
-
-    const snapshot = snapshotState();
-    let added = 0, skipped = 0;
-
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row.some(c => c.trim())) continue; // skip blank rows
-
-      const name   = col(row, 'name', 'customer', 'client');
-      const date   = col(row, 'date');
-      const qty    = parseFloat(col(row, 'meter', 'qty', 'quantity')) || 0;
-      const rate   = parseFloat(col(row, 'rate', 'price', 'amount')) || getRate(qty);
-      const total  = parseFloat(col(row, 'total')) || qty * rate;
-      const rawSt  = col(row, 'status', 'payment', 'paid').toLowerCase();
-      const status = (rawSt==='pd'||rawSt==='paid'||rawSt==='yes'||rawSt==='1') ? 'pd' : '';
-
-      if (!name || !total) { skipped++; continue; }
-
-      // Normalise date (handle serial numbers from Excel export)
-      let dateStr = date;
-      if (date && /^\d{5}$/.test(date)) {
-        const d = new Date(Math.round((parseInt(date)-25569)*86400*1000));
-        dateStr = d.toISOString().slice(0,10);
-      } else if (!date) {
-        dateStr = new Date().toISOString().slice(0,10);
-      }
-
-      // Skip duplicates (same name + date + total)
-      const exists = dtfData.some(r => r.name===name && r.date===dateStr && Math.abs(r.total-total)<0.01);
-      if (exists) { skipped++; continue; }
-
-      dtfData.push({date:dateStr, name, qty, rate, total, status});
-      if (!clientMap[name]) {
-        clientMap[name] = {name, total:0, orders:0, unpaid:0, lastDate:dateStr, color:COLORS[clients.length%COLORS.length]};
-        clients.push(clientMap[name]);
-      }
-      clientMap[name].total  += total;
-      clientMap[name].orders += 1;
-      if (status !== 'pd') clientMap[name].unpaid += total;
-      if (dateStr > clientMap[name].lastDate) clientMap[name].lastDate = dateStr;
-      added++;
-    }
-
-    clients.sort((a,b) => b.total - a.total);
-    populateMonthSelectors();
-    renderDash(); buildClientList(); renderOrders();
-    saveAppState();
-    recordAction('import', `Google Sheet synced — ${added} new orders`, `${skipped} rows already existed or were skipped`, snapshot);
-    toast(added > 0 ? `✅ Synced ${added} new orders from sheet!` : `✅ Sheet synced — no new orders found`);
-
-  } catch(err) {
-    console.error('Sheet sync error:', err);
-    toast('❌ ' + err.message);
-  }
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
