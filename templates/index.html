@@ -108,13 +108,13 @@
       transition: background 0.3s ease;
     }
 
-    /* ambient layer */
+    /* ambient layer — pointer-events:none is critical so it never blocks clicks */
     .shell::after {
       content: '';
       position: absolute;
       inset: 0;
       z-index: 0;
-      pointer-events: none;
+      pointer-events: none !important;
       background: linear-gradient(90deg,rgba(0,176,255,0.04),rgba(91,75,255,0.04),rgba(255,45,168,0.03));
       background-size: 300% 300%;
       mix-blend-mode: screen;
@@ -652,8 +652,8 @@
     .csend i { font-size: 15px; color: #fff; }
 
     /* ── OVERLAY / MODAL ── */
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: flex-end; z-index: 200; }
-    .overlay.on { display: flex; }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: flex-end; z-index: 200; pointer-events: none; }
+    .overlay.on { display: flex; pointer-events: auto; }
     .sheet {
       background: var(--panel);
       border-radius: 16px 16px 0 0;
@@ -776,39 +776,29 @@
 
     .btn {
       transition: opacity 0.15s, box-shadow 0.2s, transform 0.15s;
-      animation: btnFloat 3s ease-in-out infinite;
     }
 
     .btn:hover {
-      transform: translateY(-3px);
+      transform: translateY(-2px);
       box-shadow: 0 8px 22px rgba(91,75,255,0.32);
-      animation-play-state: paused;
     }
 
     .btn:active {
       transform: translateY(0px);
-      animation-play-state: paused;
     }
 
     .ibtn {
       transition: opacity 0.15s, transform 0.15s, box-shadow 0.2s;
-      animation: btnFloat 3.2s ease-in-out infinite;
     }
 
-    .ibtn:nth-child(2) { animation-delay: 0.5s; }
-    .ibtn:nth-child(3) { animation-delay: 1s; }
-    .ibtn:nth-child(4) { animation-delay: 1.5s; }
-
     .ibtn:hover {
-      transform: translateY(-3px);
+      transform: translateY(-2px);
       box-shadow: 0 8px 22px rgba(0,0,0,0.22);
-      animation-play-state: paused;
     }
 
     .ibtn:active {
       transform: translateY(0px);
       box-shadow: none;
-      animation-play-state: paused;
     }
 
     /* ── RESPONSIVE ── */
@@ -2073,7 +2063,6 @@ function sendMsg(type) {
     console.error('AI chat error:', err);
   });
 }
-}
 
 /* ── CLEAR ALL DATA ── */
 function confirmClearData() {
@@ -2396,23 +2385,25 @@ function showImportHint() {
 }
 
 /* ── INIT ── */
-loadSavedData();
-loadHistory();
-populateMonthSelectors();
-renderDash();
-buildClientList();
-renderOrders();
+document.addEventListener('DOMContentLoaded', function() {
+  try { loadSavedData(); } catch(e) { console.error('loadSavedData error:', e); }
+  try { loadHistory(); } catch(e) { console.error('loadHistory error:', e); }
+  try { populateMonthSelectors(); } catch(e) { console.error('populateMonthSelectors error:', e); }
+  try { renderDash(); } catch(e) { console.error('renderDash error:', e); }
+  try { buildClientList(); } catch(e) { console.error('buildClientList error:', e); }
+  try { renderOrders(); } catch(e) { console.error('renderOrders error:', e); }
 
-// Show import hint on customers page nav
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'clients'")) {
-    btn.addEventListener('click', () => {
-      setTimeout(() => {
-        const hint = document.getElementById('importHint');
-        if (hint) hint.style.display = 'block';
-      }, 50);
-    });
-  }
+  // Show import hint on customers page nav
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'clients'")) {
+      btn.addEventListener('click', () => {
+        setTimeout(() => {
+          const hint = document.getElementById('importHint');
+          if (hint) hint.style.display = 'block';
+        }, 50);
+      });
+    }
+  });
 });
 </script>
 </body>
