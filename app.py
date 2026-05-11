@@ -28,6 +28,11 @@ REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint
 SHEET_ID  = os.environ.get("SHEET_ID",  "1WC8nUW7_07dPmPetNCtHzeAXkkulDPzw")
 SHEET_GID = os.environ.get("SHEET_GID", "496204286")
 
+#jsonbin
+JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY", "")
+JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "")
+JSONBIN_CRM_BIN_ID   = os.environ.get("JSONBIN_CRM_BIN_ID", "")
+
 # ── Owner / whitelist config ──────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
 USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
