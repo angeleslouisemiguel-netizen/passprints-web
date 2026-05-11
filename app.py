@@ -1,17 +1,18 @@
 """
 PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI
+
 Features:
-  • Gmail OAuth2 login — session persists across refreshes
-  • Admin panel — owner can whitelist users and grant admin rights
-  • Gemini AI agents — key embedded server-side, never exposed
-  • All original CRM features intact
+• Gmail OAuth2 login — session persists across refreshes
+• Admin panel — owner can whitelist users and grant admin rights
+• Gemini AI agents — key embedded server-side, never exposed
+• All original CRM features intact
 
 Setup:
-  1. pip install -r requirements.txt
-  2. Create Google OAuth credentials at console.cloud.google.com
-     (Web app, add http://localhost:5000/auth/callback as redirect URI)
-  3. Copy .env.example → .env and fill in values
-  4. python app.py
+1. pip install -r requirements.txt
+2. Create Google OAuth credentials at console.cloud.google.com
+   (Web app, add http://localhost:5000/auth/callback as redirect URI)
+3. Copy .env.example → .env and fill in values
+4. python app.py
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -26,7 +27,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
 
 # ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAppVDVAY_dMxrVGPPNG30tgJjotlRXbe4")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
     gemini_model = genai.GenerativeModel("gemini-2.0-flash")
@@ -42,9 +43,7 @@ REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onr
 # The first admin email is always the shop owner (hardcoded or env).
 # Other users are stored in users.json
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")   # set this to your Gmail
-
-USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
-CRM_FILE   = os.path.join(os.path.dirname(__file__), "crm_data.json")
+USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
 
 def load_users():
     if not os.path.exists(USERS_FILE):
@@ -187,7 +186,6 @@ Be concise, insightful, and data-driven. Respond in English.""",
 }
 
 # ── Routes — Auth ─────────────────────────────────────────────
-
 @app.route("/login")
 def login_page():
     if session.get("user") and is_allowed(session["user"]["email"]):
@@ -235,6 +233,7 @@ def auth_callback():
             GOOGLE_CLIENT_ID,
             clock_skew_in_seconds=10
         )
+
         email   = id_info.get("email", "")
         name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
@@ -252,8 +251,8 @@ def auth_callback():
             users[email]["picture"] = picture
         save_users(users)
 
-        session.permanent = True
-        session["user"] = {"email": email, "name": name, "picture": picture}
+        session.permanent  = True
+        session["user"]    = {"email": email, "name": name, "picture": picture}
         return redirect(url_for("index"))
 
     except Exception as e:
@@ -265,16 +264,14 @@ def logout():
     return redirect(url_for("login_page"))
 
 # ── Routes — Main app ─────────────────────────────────────────
-
 @app.route("/")
 @access_required
 def index():
-    user = session["user"]
+    user  = session["user"]
     admin = is_admin(user["email"])
     return render_template("index.html", user=user, admin=admin)
 
 # ── Routes — Admin panel ──────────────────────────────────────
-
 @app.route("/admin")
 @login_required
 @admin_required
@@ -308,12 +305,12 @@ def admin_set_admin():
     data   = request.json or {}
     email  = data.get("email", "").strip().lower()
     is_adm = bool(data.get("admin", False))
-    if not email or email == OWNER_EMAIL:  # can't revoke owner
+    if not email or email == OWNER_EMAIL:   # can't revoke owner
         return jsonify({"ok": False, "msg": "Cannot modify owner"}), 400
     users = load_users()
     if email in users:
         users[email]["admin"] = is_adm
-        save_users(users)
+    save_users(users)
     return jsonify({"ok": True})
 
 @app.route("/admin/user/delete", methods=["POST"])
@@ -333,9 +330,9 @@ def admin_delete_user():
 @login_required
 @admin_required
 def admin_add_user():
-    data  = request.json or {}
-    email = data.get("email", "").strip().lower()
-    name  = data.get("name", email).strip()
+    data   = request.json or {}
+    email  = data.get("email", "").strip().lower()
+    name   = data.get("name", email).strip()
     is_adm = bool(data.get("admin", False))
     if not email:
         return jsonify({"ok": False, "msg": "Email required"}), 400
@@ -349,17 +346,16 @@ def admin_add_user():
     return jsonify({"ok": True})
 
 # ── Routes — AI Chat ──────────────────────────────────────────
-
 @app.route("/api/chat", methods=["POST"])
 @access_required
 def chat():
-    data        = request.json or {}
-    agent_type  = data.get("agent", "report")
-    user_msg    = data.get("message", "").strip()
-    customer    = data.get("customer", "")
-    dtf_data    = data.get("dtfData", [])
-    clients     = data.get("clients", [])
-    history     = data.get("history", [])
+    data       = request.json or {}
+    agent_type = data.get("agent", "report")
+    user_msg   = data.get("message", "").strip()
+    customer   = data.get("customer", "")
+    dtf_data   = data.get("dtfData", [])
+    clients    = data.get("clients", [])
+    history    = data.get("history", [])
 
     if not user_msg:
         return jsonify({"reply": "Please type a message."}), 400
@@ -372,8 +368,8 @@ def chat():
         )}), 200
 
     system_prompt = AGENT_SYSTEM_PROMPTS.get(agent_type, AGENT_SYSTEM_PROMPTS["report"])
-
     context_lines = []
+
     if customer and clients:
         client_info = next((c for c in clients if c.get("name") == customer), None)
         if client_info:
@@ -384,7 +380,7 @@ def chat():
             context_lines.append(f"  Last order date: {client_info.get('lastDate', 'N/A')}")
             cust_orders = [r for r in dtf_data if r.get("name") == customer]
             for r in sorted(cust_orders, key=lambda x: x.get("date",""), reverse=True)[:5]:
-                context_lines.append(f"    • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m = {fmt(r.get('total', 0))} ({'Paid' if r.get('status') == 'pd' else 'Unpaid'})")
+                context_lines.append(f"  • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m = {fmt(r.get('total', 0))} ({'Paid' if r.get('status') == 'pd' else 'Unpaid'})")
     elif dtf_data:
         total_rev    = sum(r.get("total", 0) for r in dtf_data if r.get("status") == "pd")
         total_unpaid = sum(r.get("total", 0) for r in dtf_data if not r.get("status"))
@@ -415,7 +411,6 @@ def chat():
         return jsonify({"reply": f"⚠️ AI error: {str(e)}"}), 200
 
 # ── Routes — Current user info ────────────────────────────────
-
 @app.route("/api/me")
 @login_required
 def api_me():
@@ -427,58 +422,3 @@ def api_me():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)
-
-# ── Shared CRM data helpers ───────────────────────────────────
-def load_crm():
-    if not os.path.exists(CRM_FILE):
-        return {"orders": [], "customers": []}
-    try:
-        with open(CRM_FILE) as f:
-            data = json.load(f)
-            if "orders" not in data:    data["orders"]    = []
-            if "customers" not in data: data["customers"] = []
-            return data
-    except Exception:
-        return {"orders": [], "customers": []}
-
-def save_crm(data):
-    with open(CRM_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
-# ── Routes — Shared CRM data ──────────────────────────────────
-
-@app.route("/api/data", methods=["GET"])
-@access_required
-def api_get_data():
-    """Return all shared orders + customers."""
-    return jsonify(load_crm())
-
-@app.route("/api/data", methods=["POST"])
-@access_required
-def api_save_data():
-    """Replace all shared orders + customers (full sync)."""
-    payload = request.json or {}
-    crm = load_crm()
-    if "orders" in payload:
-        orders = []
-        for r in payload["orders"]:
-            orders.append({
-                "date":   str(r.get("date",   "")),
-                "name":   str(r.get("name",   "")),
-                "qty":    float(r.get("qty",  0)),
-                "rate":   float(r.get("rate", 0)),
-                "total":  float(r.get("total",0)),
-                "status": str(r.get("status", "")),
-            })
-        crm["orders"] = orders
-    if "customers" in payload:
-        customers = []
-        for c in payload["customers"]:
-            customers.append({
-                "name":  str(c.get("name",  "")),
-                "phone": str(c.get("phone", "")),
-                "notes": str(c.get("notes", "")),
-            })
-        crm["customers"] = customers
-    save_crm(crm)
-    return jsonify({"ok": True})
