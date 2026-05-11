@@ -26,7 +26,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
 
 # ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAppVDVAY_dMxrVGPPNG30tgJjotlRXbe4")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
     gemini_model = genai.GenerativeModel("gemini-1.5-flash")
@@ -34,15 +34,17 @@ else:
     gemini_model = None
 
 # ── Google OAuth config ───────────────────────────────────────
-GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
-REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onrender.com/auth/callback")
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+REDIRECT_URI         = os.environ.get("REDIRECT_URI", "http://localhost:5000/auth/callback")
+
 # ── Owner / whitelist config ──────────────────────────────────
 # The first admin email is always the shop owner (hardcoded or env).
 # Other users are stored in users.json
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")   # set this to your Gmail
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+CRM_FILE   = os.path.join(os.path.dirname(__file__), "crm_data.json")
 
 def load_users():
     if not os.path.exists(USERS_FILE):
@@ -425,3 +427,58 @@ def api_me():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)
+
+# ── Shared CRM data helpers ───────────────────────────────────
+def load_crm():
+    if not os.path.exists(CRM_FILE):
+        return {"orders": [], "customers": []}
+    try:
+        with open(CRM_FILE) as f:
+            data = json.load(f)
+            if "orders" not in data:    data["orders"]    = []
+            if "customers" not in data: data["customers"] = []
+            return data
+    except Exception:
+        return {"orders": [], "customers": []}
+
+def save_crm(data):
+    with open(CRM_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+# ── Routes — Shared CRM data ──────────────────────────────────
+
+@app.route("/api/data", methods=["GET"])
+@access_required
+def api_get_data():
+    """Return all shared orders + customers."""
+    return jsonify(load_crm())
+
+@app.route("/api/data", methods=["POST"])
+@access_required
+def api_save_data():
+    """Replace all shared orders + customers (full sync)."""
+    payload = request.json or {}
+    crm = load_crm()
+    if "orders" in payload:
+        orders = []
+        for r in payload["orders"]:
+            orders.append({
+                "date":   str(r.get("date",   "")),
+                "name":   str(r.get("name",   "")),
+                "qty":    float(r.get("qty",  0)),
+                "rate":   float(r.get("rate", 0)),
+                "total":  float(r.get("total",0)),
+                "status": str(r.get("status", "")),
+            })
+        crm["orders"] = orders
+    if "customers" in payload:
+        customers = []
+        for c in payload["customers"]:
+            customers.append({
+                "name":  str(c.get("name",  "")),
+                "phone": str(c.get("phone", "")),
+                "notes": str(c.get("notes", "")),
+            })
+        crm["customers"] = customers
+    save_crm(crm)
+    return jsonify({"ok": True})
