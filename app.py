@@ -43,7 +43,8 @@ REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onr
 # Users are stored in JSONBin (persistent across Render redeploys)
 OWNER_EMAIL     = os.environ.get("OWNER_EMAIL", "")
 JSONBIN_API_KEY = os.environ.get("JSONBIN_API_KEY", "")
-JSONBIN_BIN_ID  = os.environ.get("JSONBIN_BIN_ID", "")
+JSONBIN_CRM_BIN  = os.environ.get("JSONBIN_CRM_BIN", "")
+JSONBIN_USERS_BIN = os.environ.get("JSONBIN_USERS_BIN", "")
 
 JSONBIN_BASE = "https://api.jsonbin.io/v3/b"
 
