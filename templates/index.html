@@ -1652,56 +1652,105 @@ document.addEventListener('click', function(e) {
 
 /* ── GOOGLE SHEET SYNC ── */
 async function syncSheet() {
-  // Close the account menu
   const m = document.getElementById('acctMenu');
   if (m) m.style.display = 'none';
 
   toast('🔄 Syncing from Google Sheet…');
-  try {
-    const res  = await fetch('/api/sheet-customers');
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Sync failed');
 
-    const sheetCustomers = data.customers || [];
-    if (!sheetCustomers.length) { toast('⚠️ No data found in sheet'); return; }
+  // Direct CSV export from Google Sheets — sheet must be shared "Anyone with link can view"
+  const SHEET_ID  = '1WC8nUW7_07dPmPetNCtHzeAXkkulDPzw';
+  const SHEET_GID = '496204286';
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+
+  try {
+    const res = await fetch(csvUrl);
+    if (!res.ok) throw new Error(`Sheet returned HTTP ${res.status}. Make sure it is shared as "Anyone with the link can view".`);
+    const text = await res.text();
+
+    // Check we got CSV not HTML (login redirect)
+    if (text.trim().startsWith('<')) {
+      throw new Error('Sheet is not public. Go to Google Sheets → Share → Anyone with the link → Viewer.');
+    }
+
+    // Parse CSV
+    const rows = text.trim().split('\n').map(line => {
+      // Handle quoted fields with commas inside
+      const result = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQ = !inQ; }
+        else if (ch === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+        else { cur += ch; }
+      }
+      result.push(cur.trim());
+      return result;
+    });
+
+    if (rows.length < 2) { toast('⚠️ No data rows found in sheet'); return; }
+
+    // Detect header row (first row)
+    const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]/g,''));
+    const col = (row, ...names) => {
+      for (const n of names) {
+        const idx = headers.findIndex(h => h.includes(n));
+        if (idx !== -1 && idx < row.length) return (row[idx]||'').replace(/[₱,]/g,'').trim();
+      }
+      return '';
+    };
 
     const snapshot = snapshotState();
     let added = 0, skipped = 0;
 
-    sheetCustomers.forEach(sc => {
-      (sc.dtfRows || []).forEach(row => {
-        const name   = sc.name;
-        const date   = row.date   || new Date().toISOString().slice(0,10);
-        const qty    = parseFloat(row.qty)   || 0;
-        const rate   = parseFloat(row.rate)  || getRate(qty);
-        const total  = parseFloat(row.total) || qty * rate;
-        const status = row.status || '';
-        if (!name || !total) { skipped++; return; }
-        // Skip if already exists (same name + date + total)
-        const exists = dtfData.some(r => r.name===name && r.date===date && r.total===total);
-        if (exists) { skipped++; return; }
-        dtfData.push({date, name, qty, rate, total, status});
-        if (!clientMap[name]) {
-          clientMap[name] = {name, total:0, orders:0, unpaid:0, lastDate:date, color:COLORS[clients.length%COLORS.length]};
-          clients.push(clientMap[name]);
-        }
-        clientMap[name].total  += total;
-        clientMap[name].orders += 1;
-        if (status !== 'pd') clientMap[name].unpaid += total;
-        if (date > clientMap[name].lastDate) clientMap[name].lastDate = date;
-        added++;
-      });
-    });
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row.some(c => c.trim())) continue; // skip blank rows
+
+      const name   = col(row, 'name', 'customer', 'client');
+      const date   = col(row, 'date');
+      const qty    = parseFloat(col(row, 'meter', 'qty', 'quantity')) || 0;
+      const rate   = parseFloat(col(row, 'rate', 'price', 'amount')) || getRate(qty);
+      const total  = parseFloat(col(row, 'total')) || qty * rate;
+      const rawSt  = col(row, 'status', 'payment', 'paid').toLowerCase();
+      const status = (rawSt==='pd'||rawSt==='paid'||rawSt==='yes'||rawSt==='1') ? 'pd' : '';
+
+      if (!name || !total) { skipped++; continue; }
+
+      // Normalise date (handle serial numbers from Excel export)
+      let dateStr = date;
+      if (date && /^\d{5}$/.test(date)) {
+        const d = new Date(Math.round((parseInt(date)-25569)*86400*1000));
+        dateStr = d.toISOString().slice(0,10);
+      } else if (!date) {
+        dateStr = new Date().toISOString().slice(0,10);
+      }
+
+      // Skip duplicates (same name + date + total)
+      const exists = dtfData.some(r => r.name===name && r.date===dateStr && Math.abs(r.total-total)<0.01);
+      if (exists) { skipped++; continue; }
+
+      dtfData.push({date:dateStr, name, qty, rate, total, status});
+      if (!clientMap[name]) {
+        clientMap[name] = {name, total:0, orders:0, unpaid:0, lastDate:dateStr, color:COLORS[clients.length%COLORS.length]};
+        clients.push(clientMap[name]);
+      }
+      clientMap[name].total  += total;
+      clientMap[name].orders += 1;
+      if (status !== 'pd') clientMap[name].unpaid += total;
+      if (dateStr > clientMap[name].lastDate) clientMap[name].lastDate = dateStr;
+      added++;
+    }
 
     clients.sort((a,b) => b.total - a.total);
     populateMonthSelectors();
     renderDash(); buildClientList(); renderOrders();
     saveAppState();
     recordAction('import', `Google Sheet synced — ${added} new orders`, `${skipped} rows already existed or were skipped`, snapshot);
-    toast(added > 0 ? `✅ Synced ${added} new orders from sheet!` : `✅ Sheet synced — no new orders`);
+    toast(added > 0 ? `✅ Synced ${added} new orders from sheet!` : `✅ Sheet synced — no new orders found`);
+
   } catch(err) {
     console.error('Sheet sync error:', err);
-    toast('❌ Sync failed: ' + err.message);
+    toast('❌ ' + err.message);
   }
 }
 
