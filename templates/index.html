@@ -829,8 +829,17 @@
   <!-- ── SIDEBAR ── -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-text">passprints.</div>
-      <div class="logo-sub">DTF Print CRM</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div>
+          <div class="logo-text">passprints.</div>
+          <div class="logo-sub">DTF Print CRM</div>
+        </div>
+        <label class="theme-toggle" title="Toggle light/dark mode">
+          <input type="checkbox" id="themeToggle" onchange="toggleTheme(this)">
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb" id="toggleThumb">☀️</span>
+        </label>
+      </div>
       <div class="cmyk-bars" aria-hidden="true">
         <span class="bar bar-c"></span>
         <span class="bar bar-m"></span>
@@ -849,15 +858,6 @@
     <button class="nav-btn" onclick="showPage('agents',this)"><i class="ti ti-robot"></i><span>AI Agents</span></button>
     <button class="nav-btn" onclick="openAdd()"><i class="ti ti-plus"></i><span>New Order</span></button>
     <button class="nav-btn" id="nav-history" onclick="showPage('history',this)"><i class="ti ti-history"></i><span>History</span><span id="history-badge" style="display:none;margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:99px;padding:1px 6px;"></span></button>
-
-    <div class="theme-toggle-wrap">
-      <span id="themeLabel">Light</span>
-      <label class="theme-toggle">
-        <input type="checkbox" id="themeToggle" onchange="toggleTheme(this)">
-        <span class="toggle-track"></span>
-        <span class="toggle-thumb" id="toggleThumb">☀️</span>
-      </label>
-    </div>
 
     <!-- User profile strip -->
     <div style="margin-top:auto;padding:12px 0 0;border-top:1px solid var(--border);">
@@ -1170,23 +1170,18 @@
 /* ── THEME TOGGLE ── */
 function toggleTheme(checkbox) {
   const html = document.documentElement;
-  const label = document.getElementById('themeLabel');
   const thumb = document.getElementById('toggleThumb');
   if (checkbox.checked) {
     html.setAttribute('data-theme', 'dark');
-    label.textContent = 'Dark';
     thumb.textContent = '🌙';
   } else {
     html.setAttribute('data-theme', 'light');
-    label.textContent = 'Light';
     thumb.textContent = '☀️';
   }
 }
 
 /* ── DATA ── */
-const STORAGE_KEY = 'passprintsDtfData';
-const CUSTOMERS_KEY = 'passprintsDtfCustomers';
-const HISTORY_KEY = 'passprintsDtfHistory';
+const HISTORY_KEY = 'passprintsDtfHistory'; // history stays local (per-browser)
 const dtfData = [];
 const savedCustomers = [];
 
@@ -1369,58 +1364,60 @@ function rebuildClientMap() {
   clients = Object.values(clientMap).sort((a,b) => b.total - a.total);
 }
 
-function loadSavedData() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        dtfData.splice(0, dtfData.length, ...parsed.map(row => ({
-          date: String(row.date || ''),
-          name: String(row.name || ''),
-          qty: Number(row.qty) || 0,
-          rate: Number(row.rate) || 0,
-          total: Number(row.total) || 0,
-          status: String(row.status || '')
-        })));
-      }
-    } catch (err) {
-      console.warn('Could not parse saved order data', err);
+/* ── SERVER-SIDE SHARED DATA ── */
+// All data is stored on the server so every account sees the same data.
+
+async function loadSavedData() {
+  try {
+    const res = await fetch('/api/data');
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+
+    if (Array.isArray(data.orders)) {
+      dtfData.splice(0, dtfData.length, ...data.orders.map(row => ({
+        date:   String(row.date   || ''),
+        name:   String(row.name   || ''),
+        qty:    Number(row.qty)   || 0,
+        rate:   Number(row.rate)  || 0,
+        total:  Number(row.total) || 0,
+        status: String(row.status || '')
+      })));
     }
-  }
-  const savedCust = localStorage.getItem(CUSTOMERS_KEY);
-  if (savedCust) {
-    try {
-      const parsed = JSON.parse(savedCust);
-      if (Array.isArray(parsed)) {
-        savedCustomers.splice(0, savedCustomers.length, ...parsed.map(c => ({
-          name: String(c.name || ''),
-          phone: String(c.phone || ''),
-          notes: String(c.notes || '')
-        })));
-      }
-    } catch (err) {
-      console.warn('Could not parse saved customer data', err);
+    if (Array.isArray(data.customers)) {
+      savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({
+        name:  String(c.name  || ''),
+        phone: String(c.phone || ''),
+        notes: String(c.notes || '')
+      })));
     }
+    rebuildClientMap();
+  } catch (err) {
+    console.error('Failed to load data from server:', err);
+    toast('⚠️ Could not load data from server.');
   }
-  rebuildClientMap();
 }
 
-function saveAppState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(dtfData));
-  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(savedCustomers));
-  // Silent auto-save
-}
-
-// Auto-save debounce timer
+// Debounce timer so rapid changes don't flood the server
 let autoSaveTimer;
-function autoSaveAppState() {
+function saveAppState() {
   clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dtfData));
-    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(savedCustomers));
-    // Silent auto-save, no toast notification
-  }, 800); // Save 800ms after user stops typing
+  autoSaveTimer = setTimeout(_pushDataToServer, 600);
+}
+
+function autoSaveAppState() {
+  saveAppState();
+}
+
+async function _pushDataToServer() {
+  try {
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orders: dtfData, customers: savedCustomers })
+    });
+  } catch (err) {
+    console.error('Auto-save failed:', err);
+  }
 }
 
 function fmt(n) { return '₱' + parseFloat(n||0).toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -2385,8 +2382,9 @@ function showImportHint() {
 }
 
 /* ── INIT ── */
-document.addEventListener('DOMContentLoaded', function() {
-  try { loadSavedData(); } catch(e) { console.error('loadSavedData error:', e); }
+document.addEventListener('DOMContentLoaded', async function() {
+  // Load shared server data first, then render
+  try { await loadSavedData(); } catch(e) { console.error('loadSavedData error:', e); }
   try { loadHistory(); } catch(e) { console.error('loadHistory error:', e); }
   try { populateMonthSelectors(); } catch(e) { console.error('populateMonthSelectors error:', e); }
   try { renderDash(); } catch(e) { console.error('renderDash error:', e); }
