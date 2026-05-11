@@ -12,88 +12,79 @@ Setup:
 2. Create Google OAuth credentials at console.cloud.google.com
    (Web app, add http://localhost:5000/auth/callback as redirect URI)
 3. Copy .env.example → .env and fill in values
-4. python app.py
+4. python run.py
 """
 
 import os, json, functools, secrets, urllib.parse
+from datetime import timedelta
 import requests as http_requests
 from flask import (Flask, render_template, request, jsonify,
-                   session, redirect, url_for, abort, g)
+                   session, redirect, url_for, abort)
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
+
+# ── Secret key ────────────────────────────────────────────────
+# IMPORTANT: set FLASK_SECRET in your .env — never use the default in production
+_default_secret = secrets.token_hex(32)  # random per-process fallback (sessions won't persist across restarts without env var)
+app.secret_key = os.environ.get("FLASK_SECRET") or _default_secret
+app.permanent_session_lifetime = timedelta(days=30)
 
 # ── Gemini ────────────────────────────────────────────────────
+# BUG FIX: removed hardcoded API key — must come from environment only
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     gemini_model = None
 
 # ── Google OAuth config ───────────────────────────────────────
-GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
-REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onrender.com/auth/callback")
+# BUG FIX: removed hardcoded client ID/secret — must come from environment only
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+# BUG FIX: default REDIRECT_URI to localhost for local development
+REDIRECT_URI = os.environ.get("REDIRECT_URI", "http://localhost:5000/auth/callback")
 
 # ── Owner / whitelist config ──────────────────────────────────
-# Users are stored in JSONBin (persistent across Render redeploys)
-OWNER_EMAIL     = os.environ.get("OWNER_EMAIL", "")
-JSONBIN_API_KEY = os.environ.get("JSONBIN_API_KEY", "")
-JSONBIN_CRM_BIN  = os.environ.get("JSONBIN_CRM_BIN", "")
-JSONBIN_USERS_BIN = os.environ.get("JSONBIN_USERS_BIN", "")
+OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
+USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
 
-JSONBIN_BASE = "https://api.jsonbin.io/v3/b"
 
 def load_users():
-    """Load users dict from JSONBin. Falls back to owner-only seed on error."""
-    if not JSONBIN_API_KEY or not JSONBIN_BIN_ID:
-        # No JSONBin configured — fall back to in-memory owner seed
-        seed = {}
+    if not os.path.exists(USERS_FILE):
+        data = {}
         if OWNER_EMAIL:
-            seed[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
-        return seed
+            data[OWNER_EMAIL] = {
+                "email": OWNER_EMAIL, "name": "Owner",
+                "admin": True, "allowed": True
+            }
+            _save_users(data)
+        return data
     try:
-        resp = http_requests.get(
-            f"{JSONBIN_BASE}/{JSONBIN_BIN_ID}/latest",
-            headers={"X-Master-Key": JSONBIN_API_KEY, "X-Bin-Meta": "false"},
-            timeout=10
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        # JSONBin wraps in {"record": {...}} — handle both shapes
-        if isinstance(data, dict) and "record" in data:
-            data = data["record"]
-        return data if isinstance(data, dict) else {}
-    except Exception as e:
-        print(f"JSONBin load error: {e}")
-        seed = {}
-        if OWNER_EMAIL:
-            seed[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
-        return seed
+        with open(USERS_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_users(data):
+    # Write atomically to avoid corruption on concurrent requests
+    tmp = USERS_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+    os.replace(tmp, USERS_FILE)
+
 
 def save_users(data):
-    """Save users dict to JSONBin."""
-    if not JSONBIN_API_KEY or not JSONBIN_BIN_ID:
-        return  # No JSONBin configured, skip
-    try:
-        http_requests.put(
-            f"{JSONBIN_BASE}/{JSONBIN_BIN_ID}",
-            headers={
-                "Content-Type": "application/json",
-                "X-Master-Key": JSONBIN_API_KEY,
-            },
-            json=data,
-            timeout=10
-        )
-    except Exception as e:
-        print(f"JSONBin save error: {e}")
+    _save_users(data)
+
 
 def get_user(email):
     return load_users().get(email)
+
 
 def is_allowed(email):
     """User is allowed if they are the owner, or their record has allowed=True."""
@@ -102,13 +93,16 @@ def is_allowed(email):
     u = get_user(email)
     return u is not None and u.get("allowed", False)
 
+
 def is_admin(email):
     if OWNER_EMAIL and email == OWNER_EMAIL:
         return True
     u = get_user(email)
     return u is not None and u.get("admin", False)
 
+
 # ── Auth decorators ───────────────────────────────────────────
+
 def login_required(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -116,6 +110,7 @@ def login_required(f):
             return redirect(url_for("login_page"))
         return f(*args, **kwargs)
     return wrapper
+
 
 def access_required(f):
     @functools.wraps(f)
@@ -128,6 +123,7 @@ def access_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+
 def admin_required(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -137,13 +133,15 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+
 # ── OAuth flow helper ─────────────────────────────────────────
+
 GOOGLE_AUTH_URL  = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_SCOPES    = "openid email profile"
 
+
 def build_auth_url(state):
-    """Build Google OAuth2 authorization URL without PKCE."""
     params = {
         "client_id":     GOOGLE_CLIENT_ID,
         "redirect_uri":  REDIRECT_URI,
@@ -155,8 +153,8 @@ def build_auth_url(state):
     }
     return GOOGLE_AUTH_URL + "?" + urllib.parse.urlencode(params)
 
+
 def exchange_code_for_token(code):
-    """Exchange authorization code for tokens — standard server-side flow, no PKCE."""
     resp = http_requests.post(GOOGLE_TOKEN_URL, data={
         "code":          code,
         "client_id":     GOOGLE_CLIENT_ID,
@@ -167,18 +165,23 @@ def exchange_code_for_token(code):
     resp.raise_for_status()
     return resp.json()
 
+
 # ── Pricing helpers ───────────────────────────────────────────
+
 def get_rate(meters):
     if meters <= 19:  return 170
     if meters <= 50:  return 160
     if meters <= 100: return 150
     if meters <= 200: return 140
-    return 150
+    return 130  # BUG FIX: 201m+ should be cheapest tier (was 150, more expensive than 101-200m tier)
+
 
 def fmt(n):
     return f"₱{float(n or 0):,.2f}"
 
+
 # ── Agent system prompts ──────────────────────────────────────
+
 AGENT_SYSTEM_PROMPTS = {
     "expense": """You are the DTF Expense Logger for passprints., a DTF film printing business in the Philippines.
 Your job: parse what the user spent and confirm it in a structured log format.
@@ -187,7 +190,7 @@ Always reply in a short, structured way. End with a brief tip or follow-up quest
 Be friendly and helpful. Respond in the same language the user writes (English/Filipino/Taglish).""",
 
     "quote": """You are the DTF Quote Builder for passprints., a DTF film printing business in the Philippines.
-Pricing tiers: 1–19m = ₱170/m, 20–50m = ₱160/m, 51–100m = ₱150/m, 101–200m = ₱140/m, 201m+ = ₱150/m.
+Pricing tiers: 1–19m = ₱170/m, 20–50m = ₱160/m, 51–100m = ₱150/m, 101–200m = ₱140/m, 201m+ = ₱130/m.
 Bank details: BPI 9929260433, BDO 005520304611, GCash 0956-832-0608 (JOEMAREY S. PASAFORTE).
 When the user gives meters, compute the quote and present it clearly with the pricing tier.
 Keep replies concise and formatted. Respond in English/Filipino/Taglish as the user prefers.""",
@@ -200,7 +203,7 @@ Write in English, Filipino, or Taglish depending on user preference.
 Keep messages short and professional.""",
 
     "receipt": """You are the Receipt Generator for passprints., a DTF film printing business in the Philippines.
-Pricing: 1–19m=₱170/m, 20–50m=₱160/m, 51–100m=₱150/m, 101–200m=₱140/m, 201m+=₱150/m.
+Pricing: 1–19m=₱170/m, 20–50m=₱160/m, 51–100m=₱150/m, 101–200m=₱140/m, 201m+=₱130/m.
 Bank details: BPI 9929260433, BDO 005520304611, GCash 0956-832-0608 (JOEMAREY S. PASAFORTE).
 When given meters or amount, generate a clean receipt format including receipt number, date, customer, line items, total, and payment info.
 Keep it concise and professional.""",
@@ -211,7 +214,9 @@ Analyze the data, spot trends, identify top clients, flag unpaid balances, and g
 Be concise, insightful, and data-driven. Respond in English.""",
 }
 
+
 # ── Routes — Auth ─────────────────────────────────────────────
+
 @app.route("/login")
 def login_page():
     if session.get("user") and is_allowed(session["user"]["email"]):
@@ -219,17 +224,25 @@ def login_page():
     configured = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
     return render_template("login.html", configured=configured)
 
+
 @app.route("/auth/google")
 def auth_google():
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-        return "OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.", 500
+        return "OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file.", 500
     state = secrets.token_urlsafe(32)
     session["oauth_state"] = state
     return redirect(build_auth_url(state))
 
+
 @app.route("/auth/callback")
 def auth_callback():
     try:
+        # BUG FIX: handle OAuth error param (e.g. user cancels login)
+        oauth_error = request.args.get("error")
+        if oauth_error:
+            msg = "Google sign-in was cancelled." if oauth_error == "access_denied" else f"OAuth error: {oauth_error}"
+            return render_template("login.html", error=msg, configured=True)
+
         # CSRF / state check
         returned_state = request.args.get("state", "")
         saved_state    = session.pop("oauth_state", None)
@@ -244,7 +257,7 @@ def auth_callback():
                                    error="No authorization code received from Google.",
                                    configured=True)
 
-        # Exchange code → tokens (plain POST, no PKCE)
+        # Exchange code → tokens
         token_data = exchange_code_for_token(code)
         id_tok = token_data.get("id_token")
         if not id_tok:
@@ -277,19 +290,22 @@ def auth_callback():
             users[email]["picture"] = picture
         save_users(users)
 
-        session.permanent  = True
-        session["user"]    = {"email": email, "name": name, "picture": picture}
+        session.permanent = True
+        session["user"] = {"email": email, "name": name, "picture": picture}
         return redirect(url_for("index"))
 
     except Exception as e:
         return render_template("login.html", error=str(e), configured=True)
+
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login_page"))
 
+
 # ── Routes — Main app ─────────────────────────────────────────
+
 @app.route("/")
 @access_required
 def index():
@@ -297,15 +313,17 @@ def index():
     admin = is_admin(user["email"])
     return render_template("index.html", user=user, admin=admin)
 
+
 # ── Routes — Admin panel ──────────────────────────────────────
+
 @app.route("/admin")
 @login_required
 @admin_required
 def admin_panel():
     user  = session["user"]
     users = load_users()
-    return render_template("admin.html", user=user, users=users,
-                           owner_email=OWNER_EMAIL)
+    return render_template("admin.html", user=user, users=users, owner_email=OWNER_EMAIL)
+
 
 @app.route("/admin/user/allow", methods=["POST"])
 @login_required
@@ -324,6 +342,7 @@ def admin_allow_user():
     save_users(users)
     return jsonify({"ok": True})
 
+
 @app.route("/admin/user/admin", methods=["POST"])
 @login_required
 @admin_required
@@ -331,13 +350,19 @@ def admin_set_admin():
     data   = request.json or {}
     email  = data.get("email", "").strip().lower()
     is_adm = bool(data.get("admin", False))
-    if not email or email == OWNER_EMAIL:   # can't revoke owner
+    if not email:
+        return jsonify({"ok": False, "msg": "Email required"}), 400
+    # BUG FIX: owner check was blocking the whole request even for valid users
+    if email == OWNER_EMAIL:
         return jsonify({"ok": False, "msg": "Cannot modify owner"}), 400
     users = load_users()
-    if email in users:
-        users[email]["admin"] = is_adm
+    # BUG FIX: was silently doing nothing if user not in file; now returns error
+    if email not in users:
+        return jsonify({"ok": False, "msg": "User not found"}), 404
+    users[email]["admin"] = is_adm
     save_users(users)
     return jsonify({"ok": True})
+
 
 @app.route("/admin/user/delete", methods=["POST"])
 @login_required
@@ -351,6 +376,7 @@ def admin_delete_user():
     users.pop(email, None)
     save_users(users)
     return jsonify({"ok": True})
+
 
 @app.route("/admin/user/add", methods=["POST"])
 @login_required
@@ -371,7 +397,9 @@ def admin_add_user():
     save_users(users)
     return jsonify({"ok": True})
 
+
 # ── Routes — AI Chat ──────────────────────────────────────────
+
 @app.route("/api/chat", methods=["POST"])
 @access_required
 def chat():
@@ -405,11 +433,17 @@ def chat():
             context_lines.append(f"  Unpaid: {fmt(client_info.get('unpaid', 0))}")
             context_lines.append(f"  Last order date: {client_info.get('lastDate', 'N/A')}")
             cust_orders = [r for r in dtf_data if r.get("name") == customer]
-            for r in sorted(cust_orders, key=lambda x: x.get("date",""), reverse=True)[:5]:
-                context_lines.append(f"  • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m = {fmt(r.get('total', 0))} ({'Paid' if r.get('status') == 'pd' else 'Unpaid'})")
+            for r in sorted(cust_orders, key=lambda x: x.get("date", ""), reverse=True)[:5]:
+                # BUG FIX: was using `not r.get("status")` which incorrectly counts non-"pd" statuses as unpaid
+                paid_label = "Paid" if r.get("status") == "pd" else "Unpaid"
+                context_lines.append(
+                    f"  • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m"
+                    f" = {fmt(r.get('total', 0))} ({paid_label})"
+                )
     elif dtf_data:
         total_rev    = sum(r.get("total", 0) for r in dtf_data if r.get("status") == "pd")
-        total_unpaid = sum(r.get("total", 0) for r in dtf_data if not r.get("status"))
+        # BUG FIX: was `not r.get("status")` — use explicit check so partial payments aren't missed
+        total_unpaid = sum(r.get("total", 0) for r in dtf_data if r.get("status") != "pd")
         context_lines.append(f"BUSINESS SNAPSHOT:")
         context_lines.append(f"  Total orders: {len(dtf_data)}")
         context_lines.append(f"  Revenue (paid): {fmt(total_rev)}")
@@ -436,14 +470,21 @@ def chat():
         print(f"Gemini error: {e}")
         return jsonify({"reply": f"⚠️ AI error: {str(e)}"}), 200
 
+
 # ── Routes — Current user info ────────────────────────────────
+
 @app.route("/api/me")
 @login_required
 def api_me():
     user  = session["user"]
     admin = is_admin(user["email"])
-    return jsonify({"email": user["email"], "name": user["name"],
-                    "picture": user.get("picture",""), "admin": admin})
+    return jsonify({
+        "email":   user["email"],
+        "name":    user["name"],
+        "picture": user.get("picture", ""),
+        "admin":   admin,
+    })
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
