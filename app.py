@@ -40,31 +40,56 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "GOCSPX-QvaY0sr9Hg
 REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onrender.com/auth/callback")
 
 # ── Owner / whitelist config ──────────────────────────────────
-# The first admin email is always the shop owner (hardcoded or env).
-# Other users are stored in users.json
-OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")   # set this to your Gmail
-USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
+# Users are stored in JSONBin (persistent across Render redeploys)
+OWNER_EMAIL     = os.environ.get("OWNER_EMAIL", "")
+JSONBIN_API_KEY = os.environ.get("JSONBIN_API_KEY", "")
+JSONBIN_BIN_ID  = os.environ.get("JSONBIN_BIN_ID", "")
+
+JSONBIN_BASE = "https://api.jsonbin.io/v3/b"
 
 def load_users():
-    if not os.path.exists(USERS_FILE):
-        # Seed with owner if set
-        data = {}
+    """Load users dict from JSONBin. Falls back to owner-only seed on error."""
+    if not JSONBIN_API_KEY or not JSONBIN_BIN_ID:
+        # No JSONBin configured — fall back to in-memory owner seed
+        seed = {}
         if OWNER_EMAIL:
-            data[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
-        _save_users(data)
-        return data
+            seed[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
+        return seed
     try:
-        with open(USERS_FILE) as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-def _save_users(data):
-    with open(USERS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+        resp = http_requests.get(
+            f"{JSONBIN_BASE}/{JSONBIN_BIN_ID}/latest",
+            headers={"X-Master-Key": JSONBIN_API_KEY, "X-Bin-Meta": "false"},
+            timeout=10
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        # JSONBin wraps in {"record": {...}} — handle both shapes
+        if isinstance(data, dict) and "record" in data:
+            data = data["record"]
+        return data if isinstance(data, dict) else {}
+    except Exception as e:
+        print(f"JSONBin load error: {e}")
+        seed = {}
+        if OWNER_EMAIL:
+            seed[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
+        return seed
 
 def save_users(data):
-    _save_users(data)
+    """Save users dict to JSONBin."""
+    if not JSONBIN_API_KEY or not JSONBIN_BIN_ID:
+        return  # No JSONBin configured, skip
+    try:
+        http_requests.put(
+            f"{JSONBIN_BASE}/{JSONBIN_BIN_ID}",
+            headers={
+                "Content-Type": "application/json",
+                "X-Master-Key": JSONBIN_API_KEY,
+            },
+            json=data,
+            timeout=10
+        )
+    except Exception as e:
+        print(f"JSONBin save error: {e}")
 
 def get_user(email):
     return load_users().get(email)
