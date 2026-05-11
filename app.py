@@ -155,23 +155,29 @@ def save_users(data):
 # ── CRM bin (orders / customers) ─────────────────────────────
 
 def load_crm():
-    """Load CRM order records from JSONBin CRM bin, or local file in dev.
-    Returns a list of order dicts."""
+    """Load CRM data from JSONBin or local file.
+    Returns a dict: {"orders": [...], "customers": [...]}
+    """
     if JSONBIN_CRM_URL and JSONBIN_API_KEY:
         data = _jb_load(JSONBIN_CRM_URL, "crm")
-        # Bin may be seeded with {} — normalise to list
-        if isinstance(data, dict):
-            return data.get("orders", [])
-        return data if isinstance(data, list) else []
-    data = _local_load(CRM_DATA_FILE)
+    else:
+        data = _local_load(CRM_DATA_FILE)
+
+    # Normalise: bin may be seeded as {} or as a bare list (legacy)
+    if isinstance(data, list):
+        return {"orders": data, "customers": []}
     if isinstance(data, dict):
-        return data.get("orders", [])
-    return data if isinstance(data, list) else []
+        return {
+            "orders":    data.get("orders",    []),
+            "customers": data.get("customers", []),
+        }
+    return {"orders": [], "customers": []}
 
 
-def save_crm(orders):
-    """Save CRM order records. Always stored as {"orders": [...]}."""
-    payload = {"orders": orders}
+def save_crm(payload):
+    """Save CRM data. payload must be a dict with 'orders' and 'customers' lists."""
+    if not isinstance(payload, dict):
+        payload = {"orders": payload, "customers": []}  # legacy list compat
     if JSONBIN_CRM_URL and JSONBIN_API_KEY:
         _jb_save(JSONBIN_CRM_URL, payload, "crm")
     else:
@@ -495,24 +501,52 @@ def admin_add_user():
 
 
 # ── Routes — CRM Data (orders / customers) ───────────────────
+# The frontend uses /api/data (GET + POST) to load/save both orders and customers.
+# /api/crm is kept for backward compatibility.
+
+@app.route("/api/data", methods=["GET"])
+@access_required
+def api_data_load():
+    """Return all orders and customers in one payload.""",
+    payload   = load_crm()
+    orders    = payload.get("orders",    []) if isinstance(payload, dict) else payload
+    customers = payload.get("customers", []) if isinstance(payload, dict) else []
+    return jsonify({"ok": True, "orders": orders, "customers": customers})
+
+
+@app.route("/api/data", methods=["POST"])
+@access_required
+def api_data_save():
+    """Save orders and customers together.""",
+    data      = request.json or {}
+    orders    = data.get("orders",    [])
+    customers = data.get("customers", [])
+    if not isinstance(orders, list) or not isinstance(customers, list):
+        return jsonify({"ok": False, "msg": "orders and customers must be lists"}), 400
+    save_crm({"orders": orders, "customers": customers})
+    return jsonify({"ok": True, "saved_orders": len(orders), "saved_customers": len(customers)})
+
 
 @app.route("/api/crm", methods=["GET"])
 @access_required
 def api_crm_load():
-    """Return all CRM order records as a JSON array."""
-    orders = load_crm()
+    """Return orders only (compat).""",
+    payload = load_crm()
+    orders  = payload.get("orders", []) if isinstance(payload, dict) else payload
     return jsonify({"ok": True, "orders": orders})
 
 
 @app.route("/api/crm", methods=["POST"])
 @access_required
 def api_crm_save():
-    """Replace the full CRM order list with the posted array."""
-    data = request.json or {}
+    """Save full order list (compat).""",
+    data   = request.json or {}
     orders = data.get("orders", [])
     if not isinstance(orders, list):
         return jsonify({"ok": False, "msg": "orders must be a list"}), 400
-    save_crm(orders)
+    payload = load_crm()
+    customers = payload.get("customers", []) if isinstance(payload, dict) else []
+    save_crm({"orders": orders, "customers": customers})
     return jsonify({"ok": True, "saved": len(orders)})
 
 
