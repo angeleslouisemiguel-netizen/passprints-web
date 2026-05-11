@@ -29,14 +29,14 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "GOCSPX-QvaY0sr9Hg
 REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onrender.com/auth/callback")
 
 # ── Google Sheets config ──────────────────────────────────────
-# Paste your Google Sheet ID here (from the URL: .../d/SHEET_ID/edit)
-SHEET_ID             = os.environ.get("SHEET_ID", "")
-# Your sheet must be shared as "Anyone with the link can VIEW"
-# Tab names to pull data from (must match exactly in your spreadsheet)
-DTF_SHEET_TAB        = os.environ.get("DTF_SHEET_TAB", "DTF RECEIVE2026")
-EXPENSES_SHEET_TAB   = os.environ.get("EXPENSES_SHEET_TAB", "DTF EXPENSES2026")
-SIGNAGE_SHEET_TAB    = os.environ.get("SIGNAGE_SHEET_TAB", "SIGNAGE RECEIVE2026")
-SUMMARY_SHEET_TAB    = os.environ.get("SUMMARY_SHEET_TAB", "SUMMARY 2025")
+# Sheet ID extracted from your spreadsheet URL
+# IMPORTANT: Make sure the sheet is shared as "Anyone with the link → Viewer"
+SHEET_ID             = os.environ.get("SHEET_ID", "1WC8nUW7_07dPmPetNCtHzeAXkkulDPzw")
+# Tab names — must match exactly (case-sensitive) in your spreadsheet
+DTF_SHEET_TAB        = os.environ.get("DTF_SHEET_TAB",        "DTF RECEIVE2026")
+EXPENSES_SHEET_TAB   = os.environ.get("EXPENSES_SHEET_TAB",   "DTF EXPENSES2026")
+SIGNAGE_SHEET_TAB    = os.environ.get("SIGNAGE_SHEET_TAB",    "SIGNAGE RECEIVE2026")
+SUMMARY_SHEET_TAB    = os.environ.get("SUMMARY_SHEET_TAB",    "SUMMARY 2025")
 
 # ── Owner / whitelist config ──────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
