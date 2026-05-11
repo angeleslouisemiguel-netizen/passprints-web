@@ -29,7 +29,7 @@ app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-chang
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+    gemini_model = genai.GenerativeModel("gemini-2.0-flash")
 else:
     gemini_model = None
 
