@@ -36,7 +36,7 @@ else:
 # ── Google OAuth config ───────────────────────────────────────
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
-REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onrender.com")
+REDIRECT_URI         = os.environ.get("REDIRECT_URI", "https://passprint-dtf.onrender.com/auth/callback")
 
 # ── Owner / whitelist config ──────────────────────────────────
 # The first admin email is always the shop owner (hardcoded or env).
