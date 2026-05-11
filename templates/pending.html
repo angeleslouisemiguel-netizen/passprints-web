@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Access Pending · passprints.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#071026 0%,#0f1b35 50%,#1a0a3d 100%);padding:24px;}
+  .card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:48px 40px;max-width:420px;width:100%;text-align:center;backdrop-filter:blur(12px);}
+  .logo{font-size:24px;font-weight:800;color:#fff;margin-bottom:24px;}
+  .logo span{color:#5b4bff;}
+  .icon{font-size:48px;margin-bottom:16px;}
+  h2{font-size:20px;font-weight:700;color:#fff;margin-bottom:10px;}
+  p{font-size:14px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:16px;}
+  .email-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(91,75,255,0.15);border:1px solid rgba(91,75,255,0.3);border-radius:10px;padding:10px 16px;color:#a99fff;font-size:13px;font-weight:600;margin-bottom:24px;}
+  .email-badge img{width:24px;height:24px;border-radius:50%;}
+  .btn{display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:11px 20px;color:rgba(255,255,255,0.65);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;margin-top:8px;}
+  .btn:hover{background:rgba(255,255,255,0.10);}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">passprints<span>.</span></div>
+  <div class="icon">⏳</div>
+  <h2>Access Pending</h2>
+  <p>You've signed in successfully, but your account hasn't been approved yet.</p>
+  <div class="email-badge">
+    {% if user.picture %}<img src="{{ user.picture }}" alt="">{% endif %}
+    {{ user.email }}
+  </div>
+  <p>Please ask the shop owner to approve your account in the Admin Panel.</p>
+  <p style="font-size:12px;color:rgba(255,255,255,0.3);">Once approved, refresh this page to continue.</p>
+  <br>
+  <a href="/logout" class="btn">← Sign out and try a different account</a>
+</div>
+</body>
+</html>
