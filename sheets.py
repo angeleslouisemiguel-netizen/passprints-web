@@ -1,6 +1,9 @@
 """
 sheets.py — Google Sheets integration for passprints.
 Drop this file in the same folder as app.py.
+
+Sheet columns (A–F):
+  DATE | CUSTOMER | QTY | AMOUNT | TOTAL | STATUS
 """
 
 import os
@@ -63,7 +66,7 @@ def load_all_data():
                 'date':   str(r.get('DATE', '') or ''),
                 'name':   name,
                 'qty':    float(r.get('QTY') or 0),
-                'rate':   float(r.get('RATE') or 0),
+                'rate':   float(r.get('AMOUNT') or 0),   # AMOUNT column = rate per meter
                 'total':  float(r.get('TOTAL') or 0),
                 'status': str(r.get('STATUS', '') or '').lower().strip()
             })
@@ -91,13 +94,13 @@ def load_all_data():
 def save_all_data(orders, customers):
     """
     Full sync — rewrites both sheets from the frontend state.
-    Called from POST /api/data (debounced 600ms by the frontend).
+    Orders sheet columns A–F: DATE | CUSTOMER | QTY | AMOUNT | TOTAL | STATUS
     """
     # ── Orders sheet ──────────────────────────────────────────
     try:
         sheet = get_orders_sheet()
         sheet.clear()
-        sheet.append_row(['DATE', 'CUSTOMER', 'QTY', 'RATE', 'TOTAL', 'STATUS'])
+        sheet.append_row(['DATE', 'CUSTOMER', 'QTY', 'AMOUNT', 'TOTAL', 'STATUS'])
         if orders:
             rows = [
                 [o.get('date', ''), o.get('name', ''), o.get('qty', 0),
