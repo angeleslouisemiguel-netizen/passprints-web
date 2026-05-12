@@ -335,6 +335,51 @@
         .unpaid-card:hover { background: var(--unpaid-card-hover); }
         .unpaid-card.selected { border-color: var(--red); }
 
+        /* ── SCROLLABLE 5-ROW LISTS ── */
+        .scroll-list {
+            max-height: calc(5 * 62px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-strong) transparent;
+        }
+        .scroll-list::-webkit-scrollbar { width: 4px; }
+        .scroll-list::-webkit-scrollbar-track { background: transparent; }
+        .scroll-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+        .scroll-table-wrap {
+            max-height: calc(5 * 46px + 42px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-strong) transparent;
+        }
+        .scroll-table-wrap::-webkit-scrollbar { width: 4px; }
+        .scroll-table-wrap::-webkit-scrollbar-track { background: transparent; }
+        .scroll-table-wrap::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+        .scroll-table-wrap .tbl thead th {
+            position: sticky; top: 0; z-index: 2;
+            background: var(--bg-secondary);
+        }
+
+        .scroll-dash {
+            max-height: calc(5 * 68px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-strong) transparent;
+        }
+        .scroll-dash::-webkit-scrollbar { width: 4px; }
+        .scroll-dash::-webkit-scrollbar-track { background: transparent; }
+        .scroll-dash::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+        .scroll-history {
+            max-height: calc(5 * 70px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-strong) transparent;
+        }
+        .scroll-history::-webkit-scrollbar { width: 4px; }
+        .scroll-history::-webkit-scrollbar-track { background: transparent; }
+        .scroll-history::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
         .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 9999; }
         .toast.show { opacity: 1; }
 
@@ -599,7 +644,7 @@
                 <a href="#" onclick="downloadTemplate();return false;" style="color:var(--accent);font-weight:700;">Download template ↓</a>
             </div>
             <input class="search-bar" placeholder="Search customers…" oninput="filterClients(this.value)">
-            <div class="clist" id="clientList"></div>
+            <div class="clist scroll-list" id="clientList"></div>
         </div>
 
         <!-- ORDERS -->
@@ -614,10 +659,12 @@
                 <select id="ord-month" onchange="renderOrders()"><option value="">All months</option></select>
             </div>
             <div class="card" style="padding:0;overflow:hidden;">
+                <div class="scroll-table-wrap">
                 <table class="tbl">
                     <thead><tr><th>Date</th><th>Customer</th><th>Meters</th><th>Rate</th><th>Total</th><th>Status</th></tr></thead>
                     <tbody id="ordersBody"></tbody>
                 </table>
+                </div>
             </div>
         </div>
 
@@ -685,7 +732,7 @@
                 <div style="font-size:14px;font-weight:600;color:var(--text-secondary);">No activity yet</div>
                 <div style="font-size:12px;color:var(--muted);margin-top:4px;">Actions like adding orders, customers, and payment changes will appear here.</div>
             </div>
-            <div id="historyList"></div>
+            <div id="historyList" class="scroll-history"></div>
         </div>
 
     </main>
@@ -972,9 +1019,9 @@
         const month = document.getElementById('monthSel').value;
         let source = month === 'all' ? dtfData : dtfData.filter(r => getMonthKey(r.date) === month);
         if (dashFilter) source = source.filter(r => r.name.toLowerCase().includes(dashFilter.toLowerCase()));
-        const recent = source.slice().reverse().slice(0, 6);
+        const recent = source.slice().reverse();
         document.getElementById('dash-recent').innerHTML = recent.length
-            ? recent.map(r => `<div class="project-row"><div class="row-head"><span style="font-weight:600;font-size:13px;">${r.name}</span><span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${r.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div><div class="row-meta"><span>${r.date}</span><span>${r.qty}m @ ₱${r.rate}/m</span><span style="margin-left:auto;font-weight:600;">${fmt(r.total)}</span></div></div>`).join('')
+            ? `<div class="scroll-dash">${recent.map(r => `<div class="project-row"><div class="row-head"><span style="font-weight:600;font-size:13px;">${r.name}</span><span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${r.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div><div class="row-meta"><span>${r.date}</span><span>${r.qty}m @ ₱${r.rate}/m</span><span style="margin-left:auto;font-weight:600;">${fmt(r.total)}</span></div></div>`).join('')}</div>`
             : '<div class="empty">No orders for this period</div>';
         const unpaidByClient = {};
         source.filter(r => r.status !== 'pd').forEach(r => {
@@ -983,7 +1030,7 @@
         });
         const unpaidList = Object.values(unpaidByClient).sort((a, b) => b.total - a.total);
         document.getElementById('dash-unpaid').innerHTML = unpaidList.length
-            ? unpaidList.map(c => `<div class="project-row" onclick="openClientById('${c.name}')"><div class="row-head"><span style="font-weight:600;font-size:13px;">${c.name}</span><span class="badge unpaid">${fmt(c.total)}</span></div><div class="row-meta"><span>${c.count} unpaid order${c.count > 1 ? 's' : ''}</span></div></div>`).join('')
+            ? `<div class="scroll-dash">${unpaidList.map(c => `<div class="project-row" onclick="openClientById('${c.name}')"><div class="row-head"><span style="font-weight:600;font-size:13px;">${c.name}</span><span class="badge unpaid">${fmt(c.total)}</span></div><div class="row-meta"><span>${c.count} unpaid order${c.count > 1 ? 's' : ''}</span></div></div>`).join('')}</div>`
             : '<div class="empty" style="padding:1.5rem;">✅ All paid up!</div>';
     }
 
