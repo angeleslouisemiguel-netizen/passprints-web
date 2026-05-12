@@ -1,11 +1,11 @@
 """
-PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI + Google Sheets
+PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI
 """
 
 import os, json, functools, secrets, urllib.parse
 import requests as http_requests
 from flask import (Flask, render_template, request, jsonify,
-                   session, redirect, url_for, abort)
+                   session, redirect, url_for, abort, g)
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
@@ -14,38 +14,30 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
 
 # ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAppVDVAY_dMxrVGPPNG30tgJjotlRXbe4")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     gemini_model = None
 
 # ── Google OAuth config ───────────────────────────────────────
-GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
 REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
-
-# ── Google Sheets — import only when GOOGLE_SHEET_ID is set ──
-SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "")
-_sheets_enabled = bool(SHEET_ID)
-if _sheets_enabled:
-    try:
-        from sheets import load_all_data, save_all_data
-    except Exception as _sheets_import_err:
-        print(f"[sheets] import error: {_sheets_import_err}")
-        _sheets_enabled = False
 
 # ── Owner / whitelist config ──────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
 USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
+DATA_DIR    = os.path.join(os.path.dirname(__file__), "data")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 def load_users():
     if not os.path.exists(USERS_FILE):
         data = {}
         if OWNER_EMAIL:
             data[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
-        _save_users(data)
+            _save_users(data)
         return data
     try:
         with open(USERS_FILE) as f:
@@ -74,6 +66,26 @@ def is_admin(email):
         return True
     u = get_user(email)
     return u is not None and u.get("admin", False)
+
+# ── Data helpers (per-user JSON files) ───────────────────────
+def _data_path(email):
+    safe = email.replace("@", "_at_").replace(".", "_")
+    return os.path.join(DATA_DIR, f"{safe}.json")
+
+def load_user_data(email):
+    path = _data_path(email)
+    if not os.path.exists(path):
+        return {"orders": [], "customers": []}
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return {"orders": [], "customers": []}
+
+def save_user_data(email, data):
+    path = _data_path(email)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
 
 # ── Auth decorators ───────────────────────────────────────────
 def login_required(f):
@@ -104,7 +116,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
-# ── OAuth flow ────────────────────────────────────────────────
+# ── OAuth flow helper ─────────────────────────────────────────
 GOOGLE_AUTH_URL  = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_SCOPES    = "openid email profile"
@@ -138,7 +150,7 @@ def get_rate(meters):
     if meters <= 50:  return 160
     if meters <= 100: return 150
     if meters <= 200: return 140
-    return 130
+    return 150
 
 def fmt(n):
     return f"₱{float(n or 0):,.2f}"
@@ -152,7 +164,7 @@ Always reply in a short, structured way. End with a brief tip or follow-up quest
 Be friendly and helpful. Respond in the same language the user writes (English/Filipino/Taglish).""",
 
     "quote": """You are the DTF Quote Builder for passprints., a DTF film printing business in the Philippines.
-Pricing tiers: 1–19m = ₱170/m, 20–50m = ₱160/m, 51–100m = ₱150/m, 101–200m = ₱140/m, 201m+ = ₱130/m.
+Pricing tiers: 1–19m = ₱170/m, 20–50m = ₱160/m, 51–100m = ₱150/m, 101–200m = ₱140/m, 201m+ = ₱150/m.
 Bank details: BPI 9929260433, BDO 005520304611, GCash 0956-832-0608 (JOEMAREY S. PASAFORTE).
 When the user gives meters, compute the quote and present it clearly with the pricing tier.
 Keep replies concise and formatted. Respond in English/Filipino/Taglish as the user prefers.""",
@@ -165,7 +177,7 @@ Write in English, Filipino, or Taglish depending on user preference.
 Keep messages short and professional.""",
 
     "receipt": """You are the Receipt Generator for passprints., a DTF film printing business in the Philippines.
-Pricing: 1–19m=₱170/m, 20–50m=₱160/m, 51–100m=₱150/m, 101–200m=₱140/m, 201m+=₱130/m.
+Pricing: 1–19m=₱170/m, 20–50m=₱160/m, 51–100m=₱150/m, 101–200m=₱140/m, 201m+=₱150/m.
 Bank details: BPI 9929260433, BDO 005520304611, GCash 0956-832-0608 (JOEMAREY S. PASAFORTE).
 When given meters or amount, generate a clean receipt format including receipt number, date, customer, line items, total, and payment info.
 Keep it concise and professional.""",
@@ -232,8 +244,8 @@ def auth_callback():
             users[email]["name"]    = name
             users[email]["picture"] = picture
         save_users(users)
-        session.permanent  = True
-        session["user"]    = {"email": email, "name": name, "picture": picture}
+        session.permanent = True
+        session["user"]   = {"email": email, "name": name, "picture": picture}
         return redirect(url_for("index"))
     except Exception as e:
         return render_template("login.html", error=str(e), configured=True)
@@ -251,34 +263,45 @@ def index():
     admin = is_admin(user["email"])
     return render_template("index.html", user=user, admin=admin)
 
-# ── Routes — Data (Google Sheets) ────────────────────────────
-@app.route("/api/data")
+# ── Routes — CRM Data (orders + customers) ────────────────────
+@app.route("/api/data", methods=["GET"])
 @access_required
-def get_data():
-    if not _sheets_enabled:
-        return jsonify({"orders": [], "customers": [],
-                        "warning": "Google Sheets not configured. Set GOOGLE_SHEET_ID env var."}), 200
-    try:
-        data = load_all_data()
-        return jsonify(data)
-    except Exception as e:
-        print(f"[api/data GET] error: {e}")
-        return jsonify({"orders": [], "customers": [], "error": str(e)}), 200
+def api_data_get():
+    email = session["user"]["email"]
+    data  = load_user_data(email)
+    return jsonify(data)
 
 @app.route("/api/data", methods=["POST"])
 @access_required
-def save_data():
-    if not _sheets_enabled:
-        return jsonify({"ok": False, "warning": "Google Sheets not configured."}), 200
-    try:
-        payload   = request.get_json() or {}
-        orders    = payload.get("orders", [])
-        customers = payload.get("customers", [])
-        save_all_data(orders, customers)
-        return jsonify({"ok": True})
-    except Exception as e:
-        print(f"[api/data POST] error: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+def api_data_post():
+    email   = session["user"]["email"]
+    payload = request.json or {}
+    orders    = payload.get("orders",    [])
+    customers = payload.get("customers", [])
+    # Sanitise orders
+    clean_orders = []
+    for r in orders:
+        qty  = float(r.get("qty",  0) or 0)
+        rate = float(r.get("rate", 0) or 0)
+        total = float(r.get("total", 0) or 0) or qty * rate
+        clean_orders.append({
+            "date":   str(r.get("date",   "") or ""),
+            "name":   str(r.get("name",   "") or ""),
+            "qty":    qty,
+            "rate":   rate,
+            "total":  total,
+            "status": str(r.get("status", "") or ""),
+        })
+    # Sanitise customers
+    clean_customers = []
+    for c in customers:
+        clean_customers.append({
+            "name":  str(c.get("name",  "") or ""),
+            "phone": str(c.get("phone", "") or ""),
+            "notes": str(c.get("notes", "") or ""),
+        })
+    save_user_data(email, {"orders": clean_orders, "customers": clean_customers})
+    return jsonify({"ok": True})
 
 # ── Routes — Admin panel ──────────────────────────────────────
 @app.route("/admin")
@@ -318,7 +341,7 @@ def admin_set_admin():
     users = load_users()
     if email in users:
         users[email]["admin"] = is_adm
-    save_users(users)
+        save_users(users)
     return jsonify({"ok": True})
 
 @app.route("/admin/user/delete", methods=["POST"])
@@ -367,7 +390,6 @@ def chat():
 
     if not user_msg:
         return jsonify({"reply": "Please type a message."}), 400
-
     if not gemini_model:
         return jsonify({"reply": (
             "⚠️ Gemini AI is not configured yet.\n\n"
@@ -387,11 +409,8 @@ def chat():
             context_lines.append(f"  Unpaid: {fmt(client_info.get('unpaid', 0))}")
             context_lines.append(f"  Last order date: {client_info.get('lastDate', 'N/A')}")
             cust_orders = [r for r in dtf_data if r.get("name") == customer]
-            for r in sorted(cust_orders, key=lambda x: x.get("date", ""), reverse=True)[:5]:
-                context_lines.append(
-                    f"  • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m = "
-                    f"{fmt(r.get('total', 0))} ({'Paid' if r.get('status') == 'pd' else 'Unpaid'})"
-                )
+            for r in sorted(cust_orders, key=lambda x: x.get("date",""), reverse=True)[:5]:
+                context_lines.append(f"  • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m = {fmt(r.get('total', 0))} ({'Paid' if r.get('status') == 'pd' else 'Unpaid'})")
     elif dtf_data:
         total_rev    = sum(r.get("total", 0) for r in dtf_data if r.get("status") == "pd")
         total_unpaid = sum(r.get("total", 0) for r in dtf_data if not r.get("status"))
@@ -411,22 +430,22 @@ def chat():
         for turn in history[-6:]:
             role = "user" if turn.get("role") == "user" else "model"
             full_history.append({"role": role, "parts": [turn.get("text", "")]})
-        chat_session = gemini_model.start_chat(history=full_history)
-        full_prompt  = f"{system_prompt}\n\n---\nUser message: {user_msg}"
-        response     = chat_session.send_message(full_prompt)
+        chat_session  = gemini_model.start_chat(history=full_history)
+        full_prompt   = f"{system_prompt}\n\n---\nUser message: {user_msg}"
+        response      = chat_session.send_message(full_prompt)
         return jsonify({"reply": response.text.strip()})
     except Exception as e:
         print(f"Gemini error: {e}")
         return jsonify({"reply": f"⚠️ AI error: {str(e)}"}), 200
 
-# ── Routes — Current user ─────────────────────────────────────
+# ── Routes — Current user info ────────────────────────────────
 @app.route("/api/me")
 @login_required
 def api_me():
     user  = session["user"]
     admin = is_admin(user["email"])
     return jsonify({"email": user["email"], "name": user["name"],
-                    "picture": user.get("picture", ""), "admin": admin})
+                    "picture": user.get("picture",""), "admin": admin})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
