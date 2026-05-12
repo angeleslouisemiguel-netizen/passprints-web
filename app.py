@@ -25,6 +25,9 @@ else:
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
+JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY", "")
+JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "")
+JSONBIN_CRM_BIN_ID   = os.environ.get("JSONBIN_CRM_BIN_ID", "")
 
 # ── Google Sheets — import only when GOOGLE_SHEET_ID is set ──
 SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "")
