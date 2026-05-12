@@ -359,7 +359,6 @@
             position: sticky; top: 0; z-index: 2;
             background: var(--bg-secondary);
         }
-
         .scroll-dash {
             max-height: calc(5 * 68px);
             overflow-y: auto;
@@ -369,7 +368,6 @@
         .scroll-dash::-webkit-scrollbar { width: 4px; }
         .scroll-dash::-webkit-scrollbar-track { background: transparent; }
         .scroll-dash::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
-
         .scroll-history {
             max-height: calc(5 * 70px);
             overflow-y: auto;
@@ -797,6 +795,7 @@
 
     /* ── DATA ── */
     const HISTORY_KEY = 'passprintsDtfHistory';
+    const APP_DATA_KEY = 'passprintsDtfData';
     const dtfData = [];
     const savedCustomers = [];
 
@@ -914,28 +913,66 @@
 
     /* ── SERVER DATA ── */
     async function loadSavedData() {
+        // 1. Try server first
         try {
             const res = await fetch('/api/data');
-            if (!res.ok) throw new Error('Server error ' + res.status);
-            const data = await res.json();
-            if (Array.isArray(data.orders)) {
-                dtfData.splice(0, dtfData.length, ...data.orders.map(row => ({
-                    date: String(row.date || ''), name: String(row.name || ''),
-                    qty: Number(row.qty) || 0, rate: Number(row.rate) || 0,
-                    total: Number(row.total) || ((Number(row.qty) || 0) * (Number(row.rate) || 0)), status: String(row.status || '')
-                })));
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.orders) && data.orders.length > 0) {
+                    dtfData.splice(0, dtfData.length, ...data.orders.map(row => ({
+                        date: String(row.date || ''), name: String(row.name || ''),
+                        qty: Number(row.qty) || 0, rate: Number(row.rate) || 0,
+                        total: Number(row.total) || ((Number(row.qty) || 0) * (Number(row.rate) || 0)),
+                        status: String(row.status || '')
+                    })));
+                    if (Array.isArray(data.customers)) {
+                        savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({
+                            name: String(c.name || ''), phone: String(c.phone || ''), notes: String(c.notes || '')
+                        })));
+                    }
+                    try { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ orders: dtfData, customers: savedCustomers })); } catch(e) {}
+                    rebuildClientMap();
+                    return;
+                }
             }
-            if (Array.isArray(data.customers)) {
-                savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({
-                    name: String(c.name || ''), phone: String(c.phone || ''), notes: String(c.notes || '')
-                })));
+        } catch (err) { console.warn('Server load failed, trying localStorage:', err); }
+
+        // 2. Fall back to localStorage
+        try {
+            const raw = localStorage.getItem(APP_DATA_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (Array.isArray(data.orders) && data.orders.length > 0) {
+                    dtfData.splice(0, dtfData.length, ...data.orders.map(row => ({
+                        date: String(row.date || ''), name: String(row.name || ''),
+                        qty: Number(row.qty) || 0, rate: Number(row.rate) || 0,
+                        total: Number(row.total) || ((Number(row.qty) || 0) * (Number(row.rate) || 0)),
+                        status: String(row.status || '')
+                    })));
+                    if (Array.isArray(data.customers)) {
+                        savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({
+                            name: String(c.name || ''), phone: String(c.phone || ''), notes: String(c.notes || '')
+                        })));
+                    }
+                    rebuildClientMap();
+                    return;
+                }
             }
-            rebuildClientMap();
-        } catch (err) { console.error('Failed to load data:', err); toast('⚠️ Could not load data from server.'); }
+        } catch (e) { console.warn('localStorage load failed:', e); }
+
+        rebuildClientMap();
     }
 
     let autoSaveTimer;
-    function saveAppState() { clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(_pushDataToServer, 600); }
+    function saveAppState() {
+        clearTimeout(autoSaveTimer);
+        // Save to localStorage immediately so refresh never loses data
+        try {
+            localStorage.setItem(APP_DATA_KEY, JSON.stringify({ orders: dtfData, customers: savedCustomers }));
+        } catch(e) { console.warn('localStorage save failed:', e); }
+        // Also push to server (debounced)
+        autoSaveTimer = setTimeout(_pushDataToServer, 600);
+    }
 
     async function _pushDataToServer() {
         try { await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orders: dtfData, customers: savedCustomers }) }); }
@@ -1133,23 +1170,77 @@
         const c = clientMap[name];
         if (!c) return;
         const txns = dtfData.filter(r => r.name === c.name);
+        const safeName = c.name.replace(/'/g, "\\'");
         openModal(`<div class="mhdr"><button class="mclose" onclick="closeModal()">← Back</button><span class="mtitle">${c.name}</span><span class="badge ${c.unpaid > 0 ? 'unpaid' : 'paid'}">${c.unpaid > 0 ? 'Has Balance' : 'All Paid'}</span></div>
         <div class="fsec">
           <div class="stats-grid" style="margin-bottom:14px;">
             <div class="scard"><div class="slabel">Total Spent</div><div class="sval" style="font-size:16px;">${fmt(c.total)}</div></div>
             <div class="scard"><div class="slabel">Orders</div><div class="sval" style="font-size:16px;">${c.orders}</div></div>
           </div>
-          <div class="flabel" style="margin-bottom:6px;">Transaction History <span style="font-size:11px;color:var(--muted);font-weight:400;">· tap a row to change status</span></div>
+          <div class="flabel" style="margin-bottom:6px;">Transaction History <span style="font-size:11px;color:var(--muted);font-weight:400;">· tap row to change status · 🗑 to delete</span></div>
           <div class="clist" style="margin:0 0 12px;">
-            ${txns.map((r, i) => `<div class="crow" onclick="toggleTxnStatus('${c.name.replace(/'/g, "\\'")}',${i})" style="cursor:pointer;" onmouseenter="this.style.background='var(--row-hover)'" onmouseleave="this.style.background=''">
-              <div class="ico" style="background:${r.status === 'pd' ? 'var(--green)' : 'var(--red)'}"><i class="ti ti-${r.status === 'pd' ? 'check' : 'clock'}"></i></div>
-              <div class="rmain"><div class="rt">${r.qty}m @ ₱${r.rate}/m</div><div class="rs">${r.date}</div></div>
-              <div class="rr" style="gap:6px;align-items:center;"><span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${fmt(r.total)}</span><i class="ti ti-chevron-right" style="font-size:14px;color:var(--muted);"></i></div>
+            ${txns.map((r, i) => `<div class="crow" style="cursor:pointer;" onmouseenter="this.style.background='var(--row-hover)'" onmouseleave="this.style.background=''">
+              <div class="ico" style="background:${r.status === 'pd' ? 'var(--green)' : 'var(--red)'}" onclick="toggleTxnStatus('${safeName}',${i})"><i class="ti ti-${r.status === 'pd' ? 'check' : 'clock'}"></i></div>
+              <div class="rmain" onclick="toggleTxnStatus('${safeName}',${i})"><div class="rt">${r.qty}m @ ₱${r.rate}/m</div><div class="rs">${r.date}</div></div>
+              <div class="rr" style="gap:6px;align-items:center;">
+                <span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}" onclick="toggleTxnStatus('${safeName}',${i})">${fmt(r.total)}</span>
+                <button onclick="event.stopPropagation();confirmDeleteOrder('${safeName}',${i})" style="background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:var(--red);border-radius:7px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;" title="Delete order"><i class="ti ti-trash" style="font-size:13px;"></i></button>
+              </div>
             </div>`).join('')}
           </div>
-          <button class="ibtn ibtn-bl" onclick="quickReceipt('${c.name}',${c.total});closeModal();"><i class="ti ti-receipt"></i> Generate Receipt</button>
-          <button class="ibtn ibtn-re" onclick="closeModal();confirmDeleteClient('${c.name.replace(/'/g, "\\'")}');" style="margin-top:6px;"><i class="ti ti-trash"></i> Delete Customer</button>
+          <button class="ibtn ibtn-bl" onclick="quickReceipt('${safeName}',${c.total});closeModal();"><i class="ti ti-receipt"></i> Generate Receipt</button>
+          ${txns.length > 0 ? `<button class="ibtn ibtn-re" onclick="closeModal();confirmDeleteClient('${safeName}');" style="margin-top:6px;"><i class="ti ti-trash"></i> Delete Customer</button>` : ''}
         </div>`);
+    }
+
+    function confirmDeleteOrder(clientName, txnIndex) {
+        const txns = dtfData.filter(r => r.name === clientName);
+        const txn = txns[txnIndex];
+        if (!txn) return;
+        openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);"><button class="mclose" onclick="openClient('${clientName.replace(/'/g, "\\'")}')">← Back</button><span class="mtitle" style="color:var(--red);">Delete Order</span><span></span></div>
+        <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
+          <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,59,48,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="ti ti-trash" style="font-size:24px;color:var(--red);"></i></div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Delete this order?</div>
+          <div style="background:var(--bg-secondary);border-radius:10px;padding:12px 16px;margin-bottom:18px;text-align:left;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);">${txn.qty}m @ ₱${txn.rate}/m</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${txn.date} · ${fmt(txn.total)}</div>
+            <div style="margin-top:6px;"><span class="badge ${txn.status === 'pd' ? 'paid' : 'unpaid'}">${txn.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="openClient('${clientName.replace(/'/g, "\\'")}')">Cancel</button>
+            <button class="ibtn ibtn-re" onclick="deleteOrder('${clientName.replace(/'/g, "\\'")}',${txnIndex})"><i class="ti ti-trash"></i> Delete</button>
+          </div>
+        </div>`);
+    }
+
+    function deleteOrder(clientName, txnIndex) {
+        const snapshot = snapshotState();
+        const txns = dtfData.filter(r => r.name === clientName);
+        const txn = txns[txnIndex];
+        if (!txn) return;
+        // Find and remove this specific order from dtfData
+        const globalIndex = dtfData.indexOf(txn);
+        if (globalIndex !== -1) dtfData.splice(globalIndex, 1);
+        // Rebuild client map
+        rebuildClientMap();
+        saveAppState();
+        recordAction('add_order', `Order deleted — ${clientName}`, `${txn.qty}m · ${fmt(txn.total)} · ${txn.date}`, snapshot);
+        renderDash(); buildClientList(); renderOrders();
+        // If customer has no more orders and not in savedCustomers, remove them entirely
+        const remaining = dtfData.filter(r => r.name === clientName);
+        const inSaved = savedCustomers.find(c => c.name === clientName);
+        if (remaining.length === 0 && !inSaved) {
+            delete clientMap[clientName];
+            const idx = clients.findIndex(c => c.name === clientName);
+            if (idx !== -1) clients.splice(idx, 1);
+            saveAppState();
+            renderDash(); buildClientList(); renderOrders();
+            closeModal();
+            toast(`🗑️ Order deleted · ${clientName} removed (no orders left)`);
+        } else {
+            toast('🗑️ Order deleted');
+            openClient(clientName);
+        }
     }
 
     /* ── ORDERS ── */
