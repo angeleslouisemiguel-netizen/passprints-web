@@ -811,7 +811,6 @@
         add_customer: { icon: 'ti-user-plus', color: 'var(--green)', label: 'Customer Added' },
         payment_change: { icon: 'ti-credit-card', color: 'var(--cyan)', label: 'Payment Updated' },
         delete_customer: { icon: 'ti-user-minus', color: 'var(--red)', label: 'Customer Deleted' },
-        delete_order: { icon: 'ti-receipt-off', color: 'var(--red)', label: 'Order Deleted' },
         clear_data: { icon: 'ti-trash', color: 'var(--red)', label: 'All Data Cleared' },
         import: { icon: 'ti-file-spreadsheet', color: 'var(--orange)', label: 'Data Imported' },
     };
@@ -876,7 +875,7 @@
                 dtfData.splice(0, dtfData.length, ...data.orders.map(row => ({
                     date: String(row.date || ''), name: String(row.name || ''),
                     qty: Number(row.qty) || 0, rate: Number(row.rate) || 0,
-                    total: Number(row.total) || 0, status: String(row.status || '')
+                    total: Number(row.total) || ((Number(row.qty) || 0) * (Number(row.rate) || 0)), status: String(row.status || '')
                 })));
             }
             if (Array.isArray(data.customers)) {
@@ -1009,95 +1008,30 @@
     function filterClients(v) { buildClientList(v); }
 
     function confirmDeleteClient(name) {
-        /* Show a list of this customer's orders to pick one to delete */
-        const txns = dtfData.filter(r => r.name === name);
-        if (!txns.length) {
-            /* No orders — customer is contacts-only, ask to remove them */
-            openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);"><button class="mclose" onclick="closeModal()">Cancel</button><span class="mtitle" style="color:var(--red);">Remove Customer</span><span></span></div>
-            <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
-              <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,59,48,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="ti ti-user-minus" style="font-size:24px;color:var(--red);"></i></div>
-              <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">"${name}" has no orders.</div>
-              <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Remove this customer from the list?</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="closeModal()">Cancel</button>
-                <button class="ibtn ibtn-re" onclick="deleteClient('${name.replace(/'/g, "\\'")}')"><i class="ti ti-user-minus"></i> Remove</button>
-              </div>
-            </div>`);
-            return;
-        }
-        const rows = txns.map((r, i) => `
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;background:var(--card-bg);">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:var(--text);">${r.qty}m @ ₱${r.rate}/m · <span style="color:var(--accent);">${fmt(r.total)}</span></div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px;">${r.date} · <span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${r.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div>
-            </div>
-            <button onclick="confirmDeleteOrder('${name.replace(/'/g, "\\'")}',${i})" style="background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:var(--red);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;"><i class="ti ti-trash" style="font-size:12px;"></i> Delete</button>
-          </div>`).join('');
-        openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);"><button class="mclose" onclick="closeModal()">Cancel</button><span class="mtitle" style="color:var(--red);">Delete an Order</span><span style="font-size:11px;color:var(--muted);">${name}</span></div>
-        <div class="fsec">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Choose which order to delete. If all orders are removed, the customer will be automatically deleted.</div>
-          ${rows}
-        </div>`);
-    }
-
-    function confirmDeleteOrder(name, txnIndex) {
-        const txns = dtfData.filter(r => r.name === name);
-        const txn = txns[txnIndex];
-        if (!txn) return;
-        openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);"><button class="mclose" onclick="confirmDeleteClient('${name.replace(/'/g, "\\'")}')">← Back</button><span class="mtitle" style="color:var(--red);">Delete Order</span><span></span></div>
+        openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);"><button class="mclose" onclick="closeModal()">Cancel</button><span class="mtitle" style="color:var(--red);">Delete Customer</span><span></span></div>
         <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
-          <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,59,48,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="ti ti-receipt-off" style="font-size:24px;color:var(--red);"></i></div>
-          <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">Delete this order?</div>
-          <div style="background:var(--bg-secondary);border-radius:10px;padding:12px 16px;margin-bottom:18px;text-align:left;">
-            <div style="font-size:13px;font-weight:600;color:var(--text);">${txn.qty}m @ ₱${txn.rate}/m · ${fmt(txn.total)}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px;">${txn.date} · <span class="badge ${txn.status === 'pd' ? 'paid' : 'unpaid'}">${txn.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div>
-          </div>
+          <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,59,48,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="ti ti-trash" style="font-size:24px;color:var(--red);"></i></div>
+          <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">Delete "${name}"?</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">This will remove the customer and all their order records.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="confirmDeleteClient('${name.replace(/'/g, "\\'")}')">← Back</button>
-            <button class="ibtn ibtn-re" onclick="deleteOrder('${name.replace(/'/g, "\\'")}',${txnIndex})"><i class="ti ti-trash"></i> Delete Order</button>
+            <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="closeModal()">Cancel</button>
+            <button class="ibtn ibtn-re" onclick="deleteClient('${name.replace(/'/g, "\\'")}')"><i class="ti ti-trash"></i> Delete</button>
           </div>
         </div>`);
-    }
-
-    function deleteOrder(name, txnIndex) {
-        const snapshot = snapshotState();
-        const txns = dtfData.filter(r => r.name === name);
-        const txn = txns[txnIndex];
-        if (!txn) return;
-        /* Find and remove the actual entry from dtfData */
-        let removed = 0;
-        for (let i = 0; i < dtfData.length; i++) {
-            if (dtfData[i] === txn) { dtfData.splice(i, 1); removed++; break; }
-        }
-        recordAction('delete_order', `Order deleted — ${name}`, `${txn.qty}m @ ₱${txn.rate}/m · ${fmt(txn.total)} · ${txn.date}`, snapshot);
-        /* Check if customer has any orders left */
-        const remaining = dtfData.filter(r => r.name === name).length;
-        const inSaved = savedCustomers.some(c => c.name === name);
-        if (remaining === 0 && !inSaved) {
-            /* Auto-remove customer */
-            const idx = clients.findIndex(c => c.name === name);
-            if (idx !== -1) clients.splice(idx, 1);
-            delete clientMap[name];
-            saveAppState();
-            closeModal(); toast(`Order deleted · "${name}" had no more orders and was removed`);
-            rebuildClientMap(); buildClientList(); renderDash(); renderOrders();
-        } else {
-            rebuildClientMap(); saveAppState();
-            closeModal(); toast('Order deleted');
-            buildClientList(); renderDash(); renderOrders();
-        }
     }
 
     function deleteClient(name) {
-        /* Only called when customer has zero orders (contacts-only) */
         const snapshot = snapshotState();
+        const clientInfo = clientMap[name];
+        const orderCount = dtfData.filter(r => r.name === name).length;
+        for (let i = dtfData.length - 1; i >= 0; i--) { if (dtfData[i].name === name) dtfData.splice(i, 1); }
         const idx = clients.findIndex(c => c.name === name);
         if (idx !== -1) clients.splice(idx, 1);
         delete clientMap[name];
         for (let i = savedCustomers.length - 1; i >= 0; i--) { if (savedCustomers[i].name === name) savedCustomers.splice(i, 1); }
         saveAppState();
-        recordAction('delete_customer', `Customer removed — ${name}`, 'No orders · removed from contacts', snapshot);
-        closeModal(); toast(`"${name}" removed`);
+        recordAction('delete_customer', `Customer deleted — ${name}`, `${orderCount} order${orderCount !== 1 ? 's' : ''} removed · Total was ${fmt(clientInfo?.total || 0)}`, snapshot);
+        closeModal(); toast(`"${name}" deleted`);
         rebuildClientMap(); buildClientList(); renderDash(); renderOrders();
     }
 
@@ -1167,7 +1101,7 @@
             </div>`).join('')}
           </div>
           <button class="ibtn ibtn-bl" onclick="quickReceipt('${c.name}',${c.total});closeModal();"><i class="ti ti-receipt"></i> Generate Receipt</button>
-          <button class="ibtn ibtn-re" onclick="closeModal();confirmDeleteClient('${c.name.replace(/'/g, "\\'")}');" style="margin-top:6px;"><i class="ti ti-receipt-off"></i> Delete an Order</button>
+          <button class="ibtn ibtn-re" onclick="closeModal();confirmDeleteClient('${c.name.replace(/'/g, "\\'")}');" style="margin-top:6px;"><i class="ti ti-trash"></i> Delete Customer</button>
         </div>`);
     }
 
