@@ -5,15 +5,7 @@ Features:
 • Admin panel — owner can whitelist users and grant admin rights
 • Gemini AI agents — key embedded server-side, never exposed
 • All original CRM features intact
-• Google Sheets sync — all data syncs to DTF RECIEVE2026 tab
-
-Setup:
-1. pip install -r requirements.txt
-2. Create Google OAuth credentials at console.cloud.google.com
-   (Web app, add http://localhost:5000/auth/callback as redirect URI)
-3. Copy .env.example → .env and fill in values
-4. Place your service account credentials.json in the project root
-5. python app.py
+• Google Sheets sync — always appends newest orders to the bottom, sorted by date
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -374,51 +366,48 @@ def api_data():
             print(f"Local save error: {e}")
 
         # ── Sync to Google Sheets ─────────────────────────────
-      # ── Sync to Google Sheets ─────────────────────────────────────
-try:
-    sh = get_sheet()
-    
-    # Get how many rows already exist
-    existing = sh.get_all_values()
-    existing_count = len(existing)
-    
-    # Only write new rows that aren't already in the sheet
-    # We track by comparing row count vs order count
-    new_orders = list(reversed(orders))  # oldest first
-    
-    if existing_count <= 3:
-        # Sheet is empty or only has headers — write all orders
-        sh.clear()
-        rows = [["DATE", "CUSTOMER", "QTY", "AMOUNT", "TOTAL", "STATUS"]]
-        for o in new_orders:
-            rows.append([
-                o.get("date",  ""),
-                o.get("name",  ""),
-                o.get("qty",   0),
-                o.get("rate",  0),
-                o.get("total", 0),
-                "pd" if o.get("status") == "pd" else "",
-            ])
-        sh.append_rows(rows, value_input_option="USER_ENTERED")
-    else:
-        # Sheet has data — only append rows that are new
-        data_rows = existing_count - 3  # subtract header rows
-        orders_to_add = new_orders[data_rows:]  # only the new ones
-        if orders_to_add:
-            new_rows = []
-            for o in orders_to_add:
-                new_rows.append([
-                    o.get("date",  ""),
-                    o.get("name",  ""),
-                    o.get("qty",   0),
-                    o.get("rate",  0),
-                    o.get("total", 0),
-                    "pd" if o.get("status") == "pd" else "",
-                ])
-            sh.append_rows(new_rows, value_input_option="USER_ENTERED")
+        try:
+            sh = get_sheet()
 
-except Exception as e:
-    print(f"Google Sheets sync error: {e}")
+            # Sort orders oldest → newest by date so newest always lands at the bottom
+            sorted_orders = sorted(
+                [o for o in orders if o.get("qty", 0) > 0],  # skip blank/test entries
+                key=lambda o: o.get("date", "")              # ascending date = oldest first
+            )
+
+            # Get existing rows to find the last written row
+            existing = sh.get_all_values()
+            # Find header row (look for DATE in any row)
+            header_row_index = 0
+            for i, row in enumerate(existing):
+                if row and str(row[0]).strip().upper() == "DATE":
+                    header_row_index = i
+                    break
+
+            # How many data rows already exist after the header
+            already_written = len(existing) - (header_row_index + 1)
+            already_written = max(already_written, 0)
+
+            # Only append orders that are newer than what's already there
+            new_orders = sorted_orders[already_written:]
+
+            if new_orders:
+                new_rows = []
+                for o in new_orders:
+                    new_rows.append([
+                        o.get("date",  ""),
+                        o.get("name",  ""),
+                        o.get("qty",   0),
+                        o.get("rate",  0),
+                        o.get("total", 0),
+                        "pd" if o.get("status") == "pd" else "",
+                    ])
+                sh.append_rows(new_rows, value_input_option="USER_ENTERED")
+
+        except Exception as e:
+            print(f"Google Sheets sync error: {e}")
+
+        return jsonify({"ok": True})
 
 # ── Routes — AI Chat ──────────────────────────────────────────
 @app.route("/api/chat", methods=["POST"])
