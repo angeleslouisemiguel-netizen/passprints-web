@@ -5,7 +5,7 @@ Features:
 • Admin panel — owner can whitelist users and grant admin rights
 • Gemini AI agents — key embedded server-side, never exposed
 • All original CRM features intact
-• Google Sheets sync — always appends newest orders to the bottom, sorted by date
+• Google Sheets sync via sheets.py
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -15,8 +15,7 @@ from flask import (Flask, render_template, request, jsonify,
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
-import gspread
-from google.oauth2.service_account import Credentials
+from sheets import load_all_data, save_all_data
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
@@ -29,18 +28,6 @@ if GEMINI_API_KEY:
 else:
     gemini_model = None
 
-# ── Google Sheets ─────────────────────────────────────────────
-SHEET_ID  = '1_O4FQ2_QNMmUGPW3JeKUQb3ufXw_qpU8qS5aUhCUyGI'
-SHEET_TAB = 'DTF RECIEVE2026'
-
-def get_sheet():
-    creds = Credentials.from_service_account_file(
-        os.path.join(os.path.dirname(__file__), 'credentials.json'),
-        scopes=['https://www.googleapis.com/auth/spreadsheets']
-    )
-    gc = gspread.authorize(creds)
-    return gc.open_by_key(SHEET_ID).worksheet(SHEET_TAB)
-
 # ── Google OAuth config ───────────────────────────────────────
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
@@ -49,7 +36,6 @@ REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint
 # ── Owner / whitelist config ──────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
 USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
-DATA_FILE   = os.path.join(os.path.dirname(__file__), "data.json")
 
 def load_users():
     if not os.path.exists(USERS_FILE):
@@ -342,71 +328,31 @@ def admin_add_user():
     save_users(users)
     return jsonify({"ok": True})
 
-# ── Routes — Data (with Google Sheets sync) ───────────────────
+# ── Routes — Data (reads & writes via sheets.py) ──────────────
 @app.route("/api/data", methods=["GET", "POST"])
 @access_required
 def api_data():
     if request.method == "GET":
+        # Load directly from Google Sheets
         try:
-            with open(DATA_FILE) as f:
-                return jsonify(json.load(f))
-        except Exception:
+            data = load_all_data()
+            return jsonify(data)
+        except Exception as e:
+            print(f"[api/data GET] error: {e}")
             return jsonify({"orders": [], "customers": []})
 
     if request.method == "POST":
+        # Save back to Google Sheets
         data      = request.json or {}
         orders    = data.get("orders", [])
         customers = data.get("customers", [])
-
-        # ── Save locally ──────────────────────────────────────
         try:
-            with open(DATA_FILE, "w") as f:
-                json.dump({"orders": orders, "customers": customers}, f)
+            # Sort oldest → newest before saving so new entries go to the bottom
+            sorted_orders = sorted(orders, key=lambda o: o.get("date", ""))
+            save_all_data(sorted_orders, customers)
         except Exception as e:
-            print(f"Local save error: {e}")
-
-        # ── Sync to Google Sheets ─────────────────────────────
-        try:
-            sh = get_sheet()
-
-            # Sort orders oldest → newest by date so newest always lands at the bottom
-            sorted_orders = sorted(
-                [o for o in orders if o.get("qty", 0) > 0],  # skip blank/test entries
-                key=lambda o: o.get("date", "")              # ascending date = oldest first
-            )
-
-            # Get existing rows to find the last written row
-            existing = sh.get_all_values()
-            # Find header row (look for DATE in any row)
-            header_row_index = 0
-            for i, row in enumerate(existing):
-                if row and str(row[0]).strip().upper() == "DATE":
-                    header_row_index = i
-                    break
-
-            # How many data rows already exist after the header
-            already_written = len(existing) - (header_row_index + 1)
-            already_written = max(already_written, 0)
-
-            # Only append orders that are newer than what's already there
-            new_orders = sorted_orders[already_written:]
-
-            if new_orders:
-                new_rows = []
-                for o in new_orders:
-                    new_rows.append([
-                        o.get("date",  ""),
-                        o.get("name",  ""),
-                        o.get("qty",   0),
-                        o.get("rate",  0),
-                        o.get("total", 0),
-                        "pd" if o.get("status") == "pd" else "",
-                    ])
-                sh.append_rows(new_rows, value_input_option="USER_ENTERED")
-
-        except Exception as e:
-            print(f"Google Sheets sync error: {e}")
-
+            print(f"[api/data POST] error: {e}")
+            return jsonify({"ok": False, "error": str(e)}), 500
         return jsonify({"ok": True})
 
 # ── Routes — AI Chat ──────────────────────────────────────────
