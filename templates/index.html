@@ -764,17 +764,17 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- ── FLOATING AI CHAT WIDGET ── -->
-<button id="pp-fab" aria-label="Open AI chat">
+<!-- ── FLOATING ChatGPT CHAT WIDGET ── -->
+<button id="pp-fab" aria-label="Open ChatGPT chat">
     <i class="ti ti-message-circle" aria-hidden="true"></i>
-    <span id="pp-fab-badge">AI</span>
+    <span id="pp-fab-badge">GPT</span>
 </button>
 
-<div id="pp-panel" class="pp-hidden" role="dialog" aria-label="passprints AI assistant">
+<div id="pp-panel" class="pp-hidden" role="dialog" aria-label="ChatGPT AI assistant">
     <div id="pp-header">
-        <div class="pp-av"><i class="ti ti-sparkles" aria-hidden="true"></i></div>
+        <div class="pp-av"><i class="ti ti-brand-openai" aria-hidden="true"></i></div>
         <div class="pp-info">
-            <div class="pp-name">passprints AI</div>
+            <div class="pp-name">ChatGPT</div>
             <div class="pp-status">Online</div>
         </div>
         <button id="pp-close-btn" aria-label="Close chat"><i class="ti ti-x" aria-hidden="true"></i></button>
@@ -1584,7 +1584,7 @@
             const chips = (ppSuggestions[agent] || [])
                 .map(s => `<button class="pp-chip" onclick="window._ppSend('${s.replace(/'/g,"\\'")}')">` + s + '</button>')
                 .join('');
-            msgs.innerHTML = '<div class="pp-empty"><i class="ti ti-sparkles" aria-hidden="true"></i>'
+            msgs.innerHTML = '<div class="pp-empty"><i class="ti ti-brand-openai" aria-hidden="true"></i>'
                 + '<div>' + (ppWelcome[agent] || 'How can I help?') + '</div>'
                 + '<div class="pp-chips">' + chips + '</div></div>';
         }
@@ -1680,7 +1680,7 @@
                 ppAddMsg('ai', reply);
                 ppHistory.push({ role: 'model', text: reply });
             } else {
-                ppAddMsg('ai', 'Could not reach the AI after 3 tries. Please try again.\n\n' + lastErr, true);
+                ppAddMsg('ai', 'Could not reach ChatGPT after 3 tries. Please try again.\n\n' + lastErr, true);
             }
             input.focus();
         }
