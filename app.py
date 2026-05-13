@@ -1,12 +1,12 @@
 """
-PassPrint DTF CRM — Flask + Gmail OAuth + Claude AI
+PassPrint DTF CRM — Flask + Gmail OAuth + ChatGPT AI
 Features:
-- Gmail OAuth2 login — session persists across refreshes
-- Admin panel — owner can whitelist users and grant admin rights
-- Claude AI agents — key embedded server-side, never exposed
-- All original CRM features intact
-- Google Sheets sync via sheets.py
-- Users stored in JSONBin (persists across Render restarts)
+• Gmail OAuth2 login — session persists across refreshes
+• Admin panel — owner can whitelist users and grant admin rights
+• ChatGPT AI agents — key embedded server-side, never exposed
+• All original CRM features intact
+• Google Sheets sync via sheets.py
+• Users stored in JSONBin (persists across Render restarts)
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -15,15 +15,15 @@ from flask import (Flask, render_template, request, jsonify,
                    session, redirect, url_for, abort, g)
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-import anthropic
+from openai import OpenAI
 from sheets import load_all_data, save_all_data
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET")
 
-# ── Anthropic Claude ──────────────────────────────────────────
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
+# ── ChatGPT (OpenAI) ──────────────────────────────────────────
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # ── Google OAuth config ───────────────────────────────────────
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID")
@@ -53,6 +53,7 @@ def load_users():
         )
         if res.ok:
             data = res.json().get("record", {})
+            # Seed owner if missing
             if OWNER_EMAIL and OWNER_EMAIL not in data:
                 data[OWNER_EMAIL] = {
                     "email": OWNER_EMAIL, "name": "Owner",
@@ -62,6 +63,7 @@ def load_users():
             return data
     except Exception as e:
         print(f"[JSONBin] load_users error: {e}")
+    # Fallback — return just the owner so the app doesn't break
     base = {}
     if OWNER_EMAIL:
         base[OWNER_EMAIL] = {
@@ -251,6 +253,7 @@ def auth_callback():
         name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
 
+        # Load, update, save users to JSONBin
         users = load_users()
         if email not in users:
             auto_allow = bool(OWNER_EMAIL and email == OWNER_EMAIL)
@@ -395,11 +398,11 @@ def chat():
     if not user_msg:
         return jsonify({"reply": "Please type a message."}), 400
 
-    if not claude_client:
+    if not openai_client:
         return jsonify({"reply": (
-            "⚠️ Claude AI is not configured yet.\n\n"
-            "Ask the shop owner to set the ANTHROPIC_API_KEY environment variable.\n"
-            "Get a key at: https://console.anthropic.com/settings/keys"
+            "⚠️ ChatGPT AI is not configured yet.\n\n"
+            "Ask the shop owner to set the OPENAI_API_KEY environment variable.\n"
+            "Get your free key at: https://platform.openai.com/api-keys"
         )}), 200
 
     system_prompt = AGENT_SYSTEM_PROMPTS.get(agent_type, AGENT_SYSTEM_PROMPTS["report"])
@@ -434,27 +437,25 @@ def chat():
         system_prompt += "\n\nCURRENT DATA CONTEXT:\n" + "\n".join(context_lines)
 
     try:
-        messages = []
+        messages = [{"role": "system", "content": system_prompt}]
         for turn in history[-6:]:
             role = "user" if turn.get("role") == "user" else "assistant"
             text = turn.get("text", "").strip()
             if text:
                 messages.append({"role": role, "content": text})
-        while messages and messages[0]["role"] != "user":
-            messages.pop(0)
         messages.append({"role": "user", "content": user_msg})
 
-        response = claude_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1024,
-            system=system_prompt,
-            messages=messages
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=800,
+            temperature=0.7,
         )
-        reply_text = response.content[0].text.strip()
+        reply_text = response.choices[0].message.content.strip()
         return jsonify({"reply": reply_text})
 
     except Exception as e:
-        print(f"Claude AI error: {e}")
+        print(f"ChatGPT error: {e}")
         return jsonify({"reply": f"⚠️ AI error: {str(e)}"}), 200
 
 # ── Routes — Current user info ────────────────────────────────
