@@ -374,32 +374,51 @@ def api_data():
             print(f"Local save error: {e}")
 
         # ── Sync to Google Sheets ─────────────────────────────
-        try:
-            sh = get_sheet()
-            sh.clear()
-
-            # Header row first
-            rows = [["DATE", "CUSTOMER", "QTY (m)", "RATE (₱/m)", "TOTAL (₱)", "STATUS"]]
-
-            # One row per order — always appended to the bottom
-            for o in reversed(orders):
-                rows.append([
+      # ── Sync to Google Sheets ─────────────────────────────────────
+try:
+    sh = get_sheet()
+    
+    # Get how many rows already exist
+    existing = sh.get_all_values()
+    existing_count = len(existing)
+    
+    # Only write new rows that aren't already in the sheet
+    # We track by comparing row count vs order count
+    new_orders = list(reversed(orders))  # oldest first
+    
+    if existing_count <= 3:
+        # Sheet is empty or only has headers — write all orders
+        sh.clear()
+        rows = [["DATE", "CUSTOMER", "QTY", "AMOUNT", "TOTAL", "STATUS"]]
+        for o in new_orders:
+            rows.append([
+                o.get("date",  ""),
+                o.get("name",  ""),
+                o.get("qty",   0),
+                o.get("rate",  0),
+                o.get("total", 0),
+                "pd" if o.get("status") == "pd" else "",
+            ])
+        sh.append_rows(rows, value_input_option="USER_ENTERED")
+    else:
+        # Sheet has data — only append rows that are new
+        data_rows = existing_count - 3  # subtract header rows
+        orders_to_add = new_orders[data_rows:]  # only the new ones
+        if orders_to_add:
+            new_rows = []
+            for o in orders_to_add:
+                new_rows.append([
                     o.get("date",  ""),
                     o.get("name",  ""),
                     o.get("qty",   0),
                     o.get("rate",  0),
                     o.get("total", 0),
-                    "Paid" if o.get("status") == "pd" else "Unpaid",
+                    "pd" if o.get("status") == "pd" else "",
                 ])
+            sh.append_rows(new_rows, value_input_option="USER_ENTERED")
 
-            # append_rows always writes after the last filled row
-            sh.append_rows(rows, value_input_option="USER_ENTERED")
-
-        except Exception as e:
-            print(f"Google Sheets sync error: {e}")
-            # Don't fail the whole request if Sheets is unavailable
-
-        return jsonify({"ok": True})
+except Exception as e:
+    print(f"Google Sheets sync error: {e}")
 
 # ── Routes — AI Chat ──────────────────────────────────────────
 @app.route("/api/chat", methods=["POST"])
