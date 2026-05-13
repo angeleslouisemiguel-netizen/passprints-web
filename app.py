@@ -1,47 +1,63 @@
 """
-PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI + Google Sheets
+PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI
+Features:
+• Gmail OAuth2 login — session persists across refreshes
+• Admin panel — owner can whitelist users and grant admin rights
+• Gemini AI agents — key embedded server-side, never exposed
+• All original CRM features intact
+• Google Sheets sync — all data syncs to DTF RECIEVE2026 tab
+
+Setup:
+1. pip install -r requirements.txt
+2. Create Google OAuth credentials at console.cloud.google.com
+   (Web app, add http://localhost:5000/auth/callback as redirect URI)
+3. Copy .env.example → .env and fill in values
+4. Place your service account credentials.json in the project root
+5. python app.py
 """
 
 import os, json, functools, secrets, urllib.parse
 import requests as http_requests
 from flask import (Flask, render_template, request, jsonify,
-                   session, redirect, url_for, abort)
+                   session, redirect, url_for, abort, g)
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
+import gspread
+from google.oauth2.service_account import Credentials
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
 
 # ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAppVDVAY_dMxrVGPPNG30tgJjotlRXbe4")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     gemini_model = None
 
-# ── Google OAuth config ───────────────────────────────────────
-GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
-JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY", "")
-JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "")
-JSONBIN_CRM_BIN_ID   = os.environ.get("JSONBIN_CRM_BIN_ID", "")
+# ── Google Sheets ─────────────────────────────────────────────
+SHEET_ID  = '1_O4FQ2_QNMmUGPW3JeKUQb3ufXw_qpU8qS5aUhCUyGI'
+SHEET_TAB = 'DTF RECIEVE2026'
 
-# ── Google Sheets — import only when GOOGLE_SHEET_ID is set ──
-SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "")
-_sheets_enabled = bool(SHEET_ID)
-if _sheets_enabled:
-    try:
-        from sheets import load_all_data, save_all_data
-    except Exception as _sheets_import_err:
-        print(f"[sheets] import error: {_sheets_import_err}")
-        _sheets_enabled = False
+def get_sheet():
+    creds = Credentials.from_service_account_file(
+        os.path.join(os.path.dirname(__file__), 'credentials.json'),
+        scopes=['https://www.googleapis.com/auth/spreadsheets']
+    )
+    gc = gspread.authorize(creds)
+    return gc.open_by_key(SHEET_ID).worksheet(SHEET_TAB)
+
+# ── Google OAuth config ───────────────────────────────────────
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
+REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
 
 # ── Owner / whitelist config ──────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
 USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
+DATA_FILE   = os.path.join(os.path.dirname(__file__), "data.json")
 
 def load_users():
     if not os.path.exists(USERS_FILE):
@@ -107,7 +123,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
-# ── OAuth flow ────────────────────────────────────────────────
+# ── OAuth flow helper ─────────────────────────────────────────
 GOOGLE_AUTH_URL  = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_SCOPES    = "openid email profile"
@@ -141,7 +157,7 @@ def get_rate(meters):
     if meters <= 50:  return 160
     if meters <= 100: return 150
     if meters <= 200: return 140
-    return 130
+    return 150
 
 def fmt(n):
     return f"₱{float(n or 0):,.2f}"
@@ -155,7 +171,7 @@ Always reply in a short, structured way. End with a brief tip or follow-up quest
 Be friendly and helpful. Respond in the same language the user writes (English/Filipino/Taglish).""",
 
     "quote": """You are the DTF Quote Builder for passprints., a DTF film printing business in the Philippines.
-Pricing tiers: 1–19m = ₱170/m, 20–50m = ₱160/m, 51–100m = ₱150/m, 101–200m = ₱140/m, 201m+ = ₱130/m.
+Pricing tiers: 1–19m = ₱170/m, 20–50m = ₱160/m, 51–100m = ₱150/m, 101–200m = ₱140/m, 201m+ = ₱150/m.
 Bank details: BPI 9929260433, BDO 005520304611, GCash 0956-832-0608 (JOEMAREY S. PASAFORTE).
 When the user gives meters, compute the quote and present it clearly with the pricing tier.
 Keep replies concise and formatted. Respond in English/Filipino/Taglish as the user prefers.""",
@@ -168,7 +184,7 @@ Write in English, Filipino, or Taglish depending on user preference.
 Keep messages short and professional.""",
 
     "receipt": """You are the Receipt Generator for passprints., a DTF film printing business in the Philippines.
-Pricing: 1–19m=₱170/m, 20–50m=₱160/m, 51–100m=₱150/m, 101–200m=₱140/m, 201m+=₱130/m.
+Pricing: 1–19m=₱170/m, 20–50m=₱160/m, 51–100m=₱150/m, 101–200m=₱140/m, 201m+=₱150/m.
 Bank details: BPI 9929260433, BDO 005520304611, GCash 0956-832-0608 (JOEMAREY S. PASAFORTE).
 When given meters or amount, generate a clean receipt format including receipt number, date, customer, line items, total, and payment info.
 Keep it concise and professional.""",
@@ -204,26 +220,31 @@ def auth_callback():
             return render_template("login.html",
                                    error="Session mismatch — please try signing in again.",
                                    configured=True)
+
         code = request.args.get("code")
         if not code:
             return render_template("login.html",
                                    error="No authorization code received from Google.",
                                    configured=True)
+
         token_data = exchange_code_for_token(code)
         id_tok = token_data.get("id_token")
         if not id_tok:
             return render_template("login.html",
                                    error="No ID token in Google response.",
                                    configured=True)
+
         id_info = id_token.verify_oauth2_token(
             id_tok,
             google_requests.Request(),
             GOOGLE_CLIENT_ID,
             clock_skew_in_seconds=10
         )
+
         email   = id_info.get("email", "")
         name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
+
         users = load_users()
         if email not in users:
             auto_allow = bool(OWNER_EMAIL and email == OWNER_EMAIL)
@@ -235,9 +256,11 @@ def auth_callback():
             users[email]["name"]    = name
             users[email]["picture"] = picture
         save_users(users)
-        session.permanent  = True
-        session["user"]    = {"email": email, "name": name, "picture": picture}
+
+        session.permanent = True
+        session["user"]   = {"email": email, "name": name, "picture": picture}
         return redirect(url_for("index"))
+
     except Exception as e:
         return render_template("login.html", error=str(e), configured=True)
 
@@ -253,35 +276,6 @@ def index():
     user  = session["user"]
     admin = is_admin(user["email"])
     return render_template("index.html", user=user, admin=admin)
-
-# ── Routes — Data (Google Sheets) ────────────────────────────
-@app.route("/api/data")
-@access_required
-def get_data():
-    if not _sheets_enabled:
-        return jsonify({"orders": [], "customers": [],
-                        "warning": "Google Sheets not configured. Set GOOGLE_SHEET_ID env var."}), 200
-    try:
-        data = load_all_data()
-        return jsonify(data)
-    except Exception as e:
-        print(f"[api/data GET] error: {e}")
-        return jsonify({"orders": [], "customers": [], "error": str(e)}), 200
-
-@app.route("/api/data", methods=["POST"])
-@access_required
-def save_data():
-    if not _sheets_enabled:
-        return jsonify({"ok": False, "warning": "Google Sheets not configured."}), 200
-    try:
-        payload   = request.get_json() or {}
-        orders    = payload.get("orders", [])
-        customers = payload.get("customers", [])
-        save_all_data(orders, customers)
-        return jsonify({"ok": True})
-    except Exception as e:
-        print(f"[api/data POST] error: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 # ── Routes — Admin panel ──────────────────────────────────────
 @app.route("/admin")
@@ -356,6 +350,57 @@ def admin_add_user():
     save_users(users)
     return jsonify({"ok": True})
 
+# ── Routes — Data (with Google Sheets sync) ───────────────────
+@app.route("/api/data", methods=["GET", "POST"])
+@access_required
+def api_data():
+    if request.method == "GET":
+        try:
+            with open(DATA_FILE) as f:
+                return jsonify(json.load(f))
+        except Exception:
+            return jsonify({"orders": [], "customers": []})
+
+    if request.method == "POST":
+        data      = request.json or {}
+        orders    = data.get("orders", [])
+        customers = data.get("customers", [])
+
+        # ── Save locally ──────────────────────────────────────
+        try:
+            with open(DATA_FILE, "w") as f:
+                json.dump({"orders": orders, "customers": customers}, f)
+        except Exception as e:
+            print(f"Local save error: {e}")
+
+        # ── Sync to Google Sheets ─────────────────────────────
+        try:
+            sh = get_sheet()
+            sh.clear()
+
+            # Header row first
+            rows = [["DATE", "CUSTOMER", "QTY (m)", "RATE (₱/m)", "TOTAL (₱)", "STATUS"]]
+
+            # One row per order — always appended to the bottom
+            for o in orders:
+                rows.append([
+                    o.get("date",  ""),
+                    o.get("name",  ""),
+                    o.get("qty",   0),
+                    o.get("rate",  0),
+                    o.get("total", 0),
+                    "Paid" if o.get("status") == "pd" else "Unpaid",
+                ])
+
+            # append_rows always writes after the last filled row
+            sh.append_rows(rows, value_input_option="USER_ENTERED")
+
+        except Exception as e:
+            print(f"Google Sheets sync error: {e}")
+            # Don't fail the whole request if Sheets is unavailable
+
+        return jsonify({"ok": True})
+
 # ── Routes — AI Chat ──────────────────────────────────────────
 @app.route("/api/chat", methods=["POST"])
 @access_required
@@ -414,15 +459,17 @@ def chat():
         for turn in history[-6:]:
             role = "user" if turn.get("role") == "user" else "model"
             full_history.append({"role": role, "parts": [turn.get("text", "")]})
+
         chat_session = gemini_model.start_chat(history=full_history)
         full_prompt  = f"{system_prompt}\n\n---\nUser message: {user_msg}"
         response     = chat_session.send_message(full_prompt)
         return jsonify({"reply": response.text.strip()})
+
     except Exception as e:
         print(f"Gemini error: {e}")
         return jsonify({"reply": f"⚠️ AI error: {str(e)}"}), 200
 
-# ── Routes — Current user ─────────────────────────────────────
+# ── Routes — Current user info ────────────────────────────────
 @app.route("/api/me")
 @login_required
 def api_me():
