@@ -1,18 +1,11 @@
 """
 PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI
-
 Features:
 • Gmail OAuth2 login — session persists across refreshes
 • Admin panel — owner can whitelist users and grant admin rights
 • Gemini AI agents — key embedded server-side, never exposed
 • All original CRM features intact
-
-Setup:
-1. pip install -r requirements.txt
-2. Create Google OAuth credentials at console.cloud.google.com
-   (Web app, add http://localhost:5000/auth/callback as redirect URI)
-3. Copy .env.example → .env and fill in values
-4. python app.py
+• Google Sheets sync — always appends newest orders to the bottom, sorted by date
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -22,29 +15,41 @@ from flask import (Flask, render_template, request, jsonify,
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
+import gspread
+from google.oauth2.service_account import Credentials
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
 
 # ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")   # Set in .env / Render env vars
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY environment variable is not set. Get a free key at https://aistudio.google.com/app/apikey")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAppVDVAY_dMxrVGPPNG30tgJjotlRXbe4")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    gemini_model = genai.GenerativeModel("gemini-2.0-flash")  # ← fixed: was gemini-1.5-flash
+else:
+    gemini_model = None
 
-genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-2.0-flash")   # ← fixed: was gemini-1.5-flash
+# ── Google Sheets ─────────────────────────────────────────────
+SHEET_ID  = '1_O4FQ2_QNMmUGPW3JeKUQb3ufXw_qpU8qS5aUhCUyGI'
+SHEET_TAB = 'DTF RECIEVE2026'
+
+def get_sheet():
+    creds = Credentials.from_service_account_file(
+        os.path.join(os.path.dirname(__file__), 'credentials.json'),
+        scopes=['https://www.googleapis.com/auth/spreadsheets']
+    )
+    gc = gspread.authorize(creds)
+    return gc.open_by_key(SHEET_ID).worksheet(SHEET_TAB)
 
 # ── Google OAuth config ───────────────────────────────────────
-GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID")      # Set in .env / Render env vars
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")  # Set in .env / Render env vars
-REDIRECT_URI         = os.environ.get("REDIRECT_URI", "http://localhost:5000/auth/callback")
-
-if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-    raise RuntimeError("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set as environment variables.")
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
+REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
 
 # ── Owner / whitelist config ──────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
 USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
+DATA_FILE   = os.path.join(os.path.dirname(__file__), "data.json")
 
 def load_users():
     if not os.path.exists(USERS_FILE):
@@ -244,8 +249,8 @@ def auth_callback():
             users[email]["picture"] = picture
         save_users(users)
 
-        session.permanent  = True
-        session["user"]    = {"email": email, "name": name, "picture": picture}
+        session.permanent = True
+        session["user"]   = {"email": email, "name": name, "picture": picture}
         return redirect(url_for("index"))
 
     except Exception as e:
@@ -337,6 +342,73 @@ def admin_add_user():
     save_users(users)
     return jsonify({"ok": True})
 
+# ── Routes — Data (with Google Sheets sync) ───────────────────
+@app.route("/api/data", methods=["GET", "POST"])
+@access_required
+def api_data():
+    if request.method == "GET":
+        try:
+            with open(DATA_FILE) as f:
+                return jsonify(json.load(f))
+        except Exception:
+            return jsonify({"orders": [], "customers": []})
+
+    if request.method == "POST":
+        data      = request.json or {}
+        orders    = data.get("orders", [])
+        customers = data.get("customers", [])
+
+        # ── Save locally ──────────────────────────────────────
+        try:
+            with open(DATA_FILE, "w") as f:
+                json.dump({"orders": orders, "customers": customers}, f)
+        except Exception as e:
+            print(f"Local save error: {e}")
+
+        # ── Sync to Google Sheets ─────────────────────────────
+        try:
+            sh = get_sheet()
+
+            # Sort orders oldest → newest by date so newest always lands at the bottom
+            sorted_orders = sorted(
+                [o for o in orders if o.get("qty", 0) > 0],  # skip blank/test entries
+                key=lambda o: o.get("date", "")              # ascending date = oldest first
+            )
+
+            # Get existing rows to find the last written row
+            existing = sh.get_all_values()
+            # Find header row (look for DATE in any row)
+            header_row_index = 0
+            for i, row in enumerate(existing):
+                if row and str(row[0]).strip().upper() == "DATE":
+                    header_row_index = i
+                    break
+
+            # How many data rows already exist after the header
+            already_written = len(existing) - (header_row_index + 1)
+            already_written = max(already_written, 0)
+
+            # Only append orders that are newer than what's already there
+            new_orders = sorted_orders[already_written:]
+
+            if new_orders:
+                new_rows = []
+                for o in new_orders:
+                    new_rows.append([
+                        o.get("date",  ""),
+                        o.get("name",  ""),
+                        o.get("qty",   0),
+                        o.get("rate",  0),
+                        o.get("total", 0),
+                        "pd" if o.get("status") == "pd" else "",
+                    ])
+                sh.append_rows(new_rows, value_input_option="USER_ENTERED")
+
+        except Exception as e:
+            print(f"Google Sheets sync error: {e}")
+
+        return jsonify({"ok": True})
+
 # ── Routes — AI Chat ──────────────────────────────────────────
 @app.route("/api/chat", methods=["POST"])
 @access_required
@@ -371,7 +443,7 @@ def chat():
             context_lines.append(f"  Unpaid: {fmt(client_info.get('unpaid', 0))}")
             context_lines.append(f"  Last order date: {client_info.get('lastDate', 'N/A')}")
             cust_orders = [r for r in dtf_data if r.get("name") == customer]
-            for r in sorted(cust_orders, key=lambda x: x.get("date",""), reverse=True)[:5]:
+            for r in sorted(cust_orders, key=lambda x: x.get("date", ""), reverse=True)[:5]:
                 context_lines.append(
                     f"  • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m = "
                     f"{fmt(r.get('total', 0))} ({'Paid' if r.get('status') == 'pd' else 'Unpaid'})"
@@ -412,7 +484,7 @@ def api_me():
     user  = session["user"]
     admin = is_admin(user["email"])
     return jsonify({"email": user["email"], "name": user["name"],
-                    "picture": user.get("picture",""), "admin": admin})
+                    "picture": user.get("picture", ""), "admin": admin})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
