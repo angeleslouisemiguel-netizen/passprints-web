@@ -1,12 +1,12 @@
 """
-PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI
+PassPrint DTF CRM — Flask + Gmail OAuth + Claude AI
 Features:
-• Gmail OAuth2 login — session persists across refreshes
-• Admin panel — owner can whitelist users and grant admin rights
-• Gemini AI agents — key embedded server-side, never exposed
-• All original CRM features intact
-• Google Sheets sync via sheets.py
-• Users stored in JSONBin (persists across Render restarts)
+- Gmail OAuth2 login — session persists across refreshes
+- Admin panel — owner can whitelist users and grant admin rights
+- Claude AI agents — key embedded server-side, never exposed
+- All original CRM features intact
+- Google Sheets sync via sheets.py
+- Users stored in JSONBin (persists across Render restarts)
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -15,19 +15,15 @@ from flask import (Flask, render_template, request, jsonify,
                    session, redirect, url_for, abort, g)
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-import google.generativeai as genai
+import anthropic
 from sheets import load_all_data, save_all_data
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET")
 
-# ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-else:
-    gemini_model = None
+# ── Anthropic Claude ──────────────────────────────────────────
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 
 # ── Google OAuth config ───────────────────────────────────────
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID")
@@ -57,7 +53,6 @@ def load_users():
         )
         if res.ok:
             data = res.json().get("record", {})
-            # Seed owner if missing
             if OWNER_EMAIL and OWNER_EMAIL not in data:
                 data[OWNER_EMAIL] = {
                     "email": OWNER_EMAIL, "name": "Owner",
@@ -67,7 +62,6 @@ def load_users():
             return data
     except Exception as e:
         print(f"[JSONBin] load_users error: {e}")
-    # Fallback — return just the owner so the app doesn't break
     base = {}
     if OWNER_EMAIL:
         base[OWNER_EMAIL] = {
@@ -257,7 +251,6 @@ def auth_callback():
         name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
 
-        # Load, update, save users to JSONBin
         users = load_users()
         if email not in users:
             auto_allow = bool(OWNER_EMAIL and email == OWNER_EMAIL)
@@ -402,11 +395,11 @@ def chat():
     if not user_msg:
         return jsonify({"reply": "Please type a message."}), 400
 
-    if not gemini_model:
+    if not claude_client:
         return jsonify({"reply": (
-            "⚠️ Gemini AI is not configured yet.\n\n"
-            "Ask the shop owner to set the GEMINI_API_KEY environment variable.\n"
-            "Free key at: https://aistudio.google.com/app/apikey"
+            "⚠️ Claude AI is not configured yet.\n\n"
+            "Ask the shop owner to set the ANTHROPIC_API_KEY environment variable.\n"
+            "Get a key at: https://console.anthropic.com/settings/keys"
         )}), 200
 
     system_prompt = AGENT_SYSTEM_PROMPTS.get(agent_type, AGENT_SYSTEM_PROMPTS["report"])
@@ -441,18 +434,27 @@ def chat():
         system_prompt += "\n\nCURRENT DATA CONTEXT:\n" + "\n".join(context_lines)
 
     try:
-        full_history = []
+        messages = []
         for turn in history[-6:]:
-            role = "user" if turn.get("role") == "user" else "model"
-            full_history.append({"role": role, "parts": [turn.get("text", "")]})
+            role = "user" if turn.get("role") == "user" else "assistant"
+            text = turn.get("text", "").strip()
+            if text:
+                messages.append({"role": role, "content": text})
+        while messages and messages[0]["role"] != "user":
+            messages.pop(0)
+        messages.append({"role": "user", "content": user_msg})
 
-        chat_session = gemini_model.start_chat(history=full_history)
-        full_prompt  = f"{system_prompt}\n\n---\nUser message: {user_msg}"
-        response     = chat_session.send_message(full_prompt)
-        return jsonify({"reply": response.text.strip()})
+        response = claude_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=messages
+        )
+        reply_text = response.content[0].text.strip()
+        return jsonify({"reply": reply_text})
 
     except Exception as e:
-        print(f"Gemini error: {e}")
+        print(f"Claude AI error: {e}")
         return jsonify({"reply": f"⚠️ AI error: {str(e)}"}), 200
 
 # ── Routes — Current user info ────────────────────────────────
