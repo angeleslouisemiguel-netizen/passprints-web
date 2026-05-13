@@ -5,7 +5,8 @@ Features:
 • Admin panel — owner can whitelist users and grant admin rights
 • Gemini AI agents — key embedded server-side, never exposed
 • All original CRM features intact
-• Google Sheets sync — always appends newest orders to the bottom, sorted by date
+• Google Sheets sync via sheets.py
+• Users stored in JSONBin (persists across Render restarts)
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -15,8 +16,7 @@ from flask import (Flask, render_template, request, jsonify,
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
-import gspread
-from google.oauth2.service_account import Credentials
+from sheets import load_all_data, save_all_data
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
@@ -25,51 +25,71 @@ app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-chang
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAppVDVAY_dMxrVGPPNG30tgJjotlRXbe4")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-2.0-flash")  # ← fixed: was gemini-1.5-flash
+    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     gemini_model = None
-
-# ── Google Sheets ─────────────────────────────────────────────
-SHEET_ID  = '1_O4FQ2_QNMmUGPW3JeKUQb3ufXw_qpU8qS5aUhCUyGI'
-SHEET_TAB = 'DTF RECIEVE2026'
-
-def get_sheet():
-    creds = Credentials.from_service_account_file(
-        os.path.join(os.path.dirname(__file__), 'credentials.json'),
-        scopes=['https://www.googleapis.com/auth/spreadsheets']
-    )
-    gc = gspread.authorize(creds)
-    return gc.open_by_key(SHEET_ID).worksheet(SHEET_TAB)
 
 # ── Google OAuth config ───────────────────────────────────────
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
 REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
 
-# ── Owner / whitelist config ──────────────────────────────────
+# ── Owner config ──────────────────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
-USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
-DATA_FILE   = os.path.join(os.path.dirname(__file__), "data.json")
+
+# ── JSONBin config (persistent user storage) ──────────────────
+JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY",      "$2a$10$w0ONBihb1OAly7FIq5fKl.XwjLUmZhCs/kO9SzRZMKMWBVJa8MIKK")
+JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "6a015819250b1311c3313c8c")
+JSONBIN_BASE         = "https://api.jsonbin.io/v3/b"
+
+JSONBIN_HEADERS = {
+    "X-Master-Key": JSONBIN_API_KEY,
+    "Content-Type": "application/json",
+}
 
 def load_users():
-    if not os.path.exists(USERS_FILE):
-        data = {}
-        if OWNER_EMAIL:
-            data[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
-        _save_users(data)
-        return data
+    """Load users dict from JSONBin."""
     try:
-        with open(USERS_FILE) as f:
-            return json.load(f)
-    except Exception:
-        return {}
+        res = http_requests.get(
+            f"{JSONBIN_BASE}/{JSONBIN_USERS_BIN_ID}/latest",
+            headers={"X-Master-Key": JSONBIN_API_KEY},
+            timeout=10
+        )
+        if res.ok:
+            data = res.json().get("record", {})
+            # Seed owner if missing
+            if OWNER_EMAIL and OWNER_EMAIL not in data:
+                data[OWNER_EMAIL] = {
+                    "email": OWNER_EMAIL, "name": "Owner",
+                    "admin": True, "allowed": True
+                }
+                _save_users_remote(data)
+            return data
+    except Exception as e:
+        print(f"[JSONBin] load_users error: {e}")
+    # Fallback — return just the owner so the app doesn't break
+    base = {}
+    if OWNER_EMAIL:
+        base[OWNER_EMAIL] = {
+            "email": OWNER_EMAIL, "name": "Owner",
+            "admin": True, "allowed": True
+        }
+    return base
 
-def _save_users(data):
-    with open(USERS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+def _save_users_remote(data):
+    """Write users dict to JSONBin."""
+    try:
+        http_requests.put(
+            f"{JSONBIN_BASE}/{JSONBIN_USERS_BIN_ID}",
+            headers=JSONBIN_HEADERS,
+            json=data,
+            timeout=10
+        )
+    except Exception as e:
+        print(f"[JSONBin] save_users error: {e}")
 
 def save_users(data):
-    _save_users(data)
+    _save_users_remote(data)
 
 def get_user(email):
     return load_users().get(email)
@@ -237,6 +257,7 @@ def auth_callback():
         name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
 
+        # Load, update, save users to JSONBin
         users = load_users()
         if email not in users:
             auto_allow = bool(OWNER_EMAIL and email == OWNER_EMAIL)
@@ -342,71 +363,28 @@ def admin_add_user():
     save_users(users)
     return jsonify({"ok": True})
 
-# ── Routes — Data (with Google Sheets sync) ───────────────────
+# ── Routes — Data (reads & writes via sheets.py) ──────────────
 @app.route("/api/data", methods=["GET", "POST"])
 @access_required
 def api_data():
     if request.method == "GET":
         try:
-            with open(DATA_FILE) as f:
-                return jsonify(json.load(f))
-        except Exception:
+            data = load_all_data()
+            return jsonify(data)
+        except Exception as e:
+            print(f"[api/data GET] error: {e}")
             return jsonify({"orders": [], "customers": []})
 
     if request.method == "POST":
         data      = request.json or {}
         orders    = data.get("orders", [])
         customers = data.get("customers", [])
-
-        # ── Save locally ──────────────────────────────────────
         try:
-            with open(DATA_FILE, "w") as f:
-                json.dump({"orders": orders, "customers": customers}, f)
+            sorted_orders = sorted(orders, key=lambda o: o.get("date", ""))
+            save_all_data(sorted_orders, customers)
         except Exception as e:
-            print(f"Local save error: {e}")
-
-        # ── Sync to Google Sheets ─────────────────────────────
-        try:
-            sh = get_sheet()
-
-            # Sort orders oldest → newest by date so newest always lands at the bottom
-            sorted_orders = sorted(
-                [o for o in orders if o.get("qty", 0) > 0],  # skip blank/test entries
-                key=lambda o: o.get("date", "")              # ascending date = oldest first
-            )
-
-            # Get existing rows to find the last written row
-            existing = sh.get_all_values()
-            # Find header row (look for DATE in any row)
-            header_row_index = 0
-            for i, row in enumerate(existing):
-                if row and str(row[0]).strip().upper() == "DATE":
-                    header_row_index = i
-                    break
-
-            # How many data rows already exist after the header
-            already_written = len(existing) - (header_row_index + 1)
-            already_written = max(already_written, 0)
-
-            # Only append orders that are newer than what's already there
-            new_orders = sorted_orders[already_written:]
-
-            if new_orders:
-                new_rows = []
-                for o in new_orders:
-                    new_rows.append([
-                        o.get("date",  ""),
-                        o.get("name",  ""),
-                        o.get("qty",   0),
-                        o.get("rate",  0),
-                        o.get("total", 0),
-                        "pd" if o.get("status") == "pd" else "",
-                    ])
-                sh.append_rows(new_rows, value_input_option="USER_ENTERED")
-
-        except Exception as e:
-            print(f"Google Sheets sync error: {e}")
-
+            print(f"[api/data POST] error: {e}")
+            return jsonify({"ok": False, "error": str(e)}), 500
         return jsonify({"ok": True})
 
 # ── Routes — AI Chat ──────────────────────────────────────────
