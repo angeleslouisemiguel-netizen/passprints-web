@@ -6,6 +6,7 @@ Features:
 • Gemini AI agents — key embedded server-side, never exposed
 • All original CRM features intact
 • Google Sheets sync via sheets.py
+• Users stored in JSONBin (persists across Render restarts)
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -32,32 +33,63 @@ else:
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
 REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
-JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY", "")
-JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "")
 
-# ── Owner / whitelist config ──────────────────────────────────
+# ── Owner config ──────────────────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
-USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
+
+# ── JSONBin config (persistent user storage) ──────────────────
+JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY",      "$2a$10$w0ONBihb1OAly7FIq5fKl.XwjLUmZhCs/kO9SzRZMKMWBVJa8MIKK")
+JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "6a015819250b1311c3313c8c")
+JSONBIN_BASE         = "https://api.jsonbin.io/v3/b"
+
+JSONBIN_HEADERS = {
+    "X-Master-Key": JSONBIN_API_KEY,
+    "Content-Type": "application/json",
+}
 
 def load_users():
-    if not os.path.exists(USERS_FILE):
-        data = {}
-        if OWNER_EMAIL:
-            data[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
-        _save_users(data)
-        return data
+    """Load users dict from JSONBin."""
     try:
-        with open(USERS_FILE) as f:
-            return json.load(f)
-    except Exception:
-        return {}
+        res = http_requests.get(
+            f"{JSONBIN_BASE}/{JSONBIN_USERS_BIN_ID}/latest",
+            headers={"X-Master-Key": JSONBIN_API_KEY},
+            timeout=10
+        )
+        if res.ok:
+            data = res.json().get("record", {})
+            # Seed owner if missing
+            if OWNER_EMAIL and OWNER_EMAIL not in data:
+                data[OWNER_EMAIL] = {
+                    "email": OWNER_EMAIL, "name": "Owner",
+                    "admin": True, "allowed": True
+                }
+                _save_users_remote(data)
+            return data
+    except Exception as e:
+        print(f"[JSONBin] load_users error: {e}")
+    # Fallback — return just the owner so the app doesn't break
+    base = {}
+    if OWNER_EMAIL:
+        base[OWNER_EMAIL] = {
+            "email": OWNER_EMAIL, "name": "Owner",
+            "admin": True, "allowed": True
+        }
+    return base
 
-def _save_users(data):
-    with open(USERS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+def _save_users_remote(data):
+    """Write users dict to JSONBin."""
+    try:
+        http_requests.put(
+            f"{JSONBIN_BASE}/{JSONBIN_USERS_BIN_ID}",
+            headers=JSONBIN_HEADERS,
+            json=data,
+            timeout=10
+        )
+    except Exception as e:
+        print(f"[JSONBin] save_users error: {e}")
 
 def save_users(data):
-    _save_users(data)
+    _save_users_remote(data)
 
 def get_user(email):
     return load_users().get(email)
@@ -225,6 +257,7 @@ def auth_callback():
         name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
 
+        # Load, update, save users to JSONBin
         users = load_users()
         if email not in users:
             auto_allow = bool(OWNER_EMAIL and email == OWNER_EMAIL)
@@ -335,7 +368,6 @@ def admin_add_user():
 @access_required
 def api_data():
     if request.method == "GET":
-        # Load directly from Google Sheets
         try:
             data = load_all_data()
             return jsonify(data)
@@ -344,12 +376,10 @@ def api_data():
             return jsonify({"orders": [], "customers": []})
 
     if request.method == "POST":
-        # Save back to Google Sheets
         data      = request.json or {}
         orders    = data.get("orders", [])
         customers = data.get("customers", [])
         try:
-            # Sort oldest → newest before saving so new entries go to the bottom
             sorted_orders = sorted(orders, key=lambda o: o.get("date", ""))
             save_all_data(sorted_orders, customers)
         except Exception as e:
