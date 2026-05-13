@@ -1,12 +1,18 @@
 """
 PassPrint DTF CRM — Flask + Gmail OAuth + Gemini AI
+
 Features:
 • Gmail OAuth2 login — session persists across refreshes
 • Admin panel — owner can whitelist users and grant admin rights
 • Gemini AI agents — key embedded server-side, never exposed
 • All original CRM features intact
-• Google Sheets sync via sheets.py
-• Users stored in JSONBin (persists across Render restarts)
+
+Setup:
+1. pip install -r requirements.txt
+2. Create Google OAuth credentials at console.cloud.google.com
+   (Web app, add http://localhost:5000/auth/callback as redirect URI)
+3. Copy .env.example → .env and fill in values
+4. python app.py
 """
 
 import os, json, functools, secrets, urllib.parse
@@ -16,80 +22,49 @@ from flask import (Flask, render_template, request, jsonify,
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import google.generativeai as genai
-from sheets import load_all_data, save_all_data
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dtf-crm-super-secret-2026-change-me")
 
 # ── Gemini ────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAppVDVAY_dMxrVGPPNG30tgJjotlRXbe4")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-else:
-    gemini_model = None
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")   # Set in .env / Render env vars
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY environment variable is not set. Get a free key at https://aistudio.google.com/app/apikey")
+
+genai.configure(api_key=GEMINI_API_KEY)
+gemini_model = genai.GenerativeModel("gemini-2.0-flash")   # ← fixed: was gemini-1.5-flash
 
 # ── Google OAuth config ───────────────────────────────────────
-GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID",     "824885091219-tkbocj406dtdktudmrldiq71ba60kj78.apps.googleusercontent.com")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "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")
-REDIRECT_URI         = os.environ.get("REDIRECT_URI",         "https://passprint-dtf.onrender.com/auth/callback")
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID")      # Set in .env / Render env vars
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")  # Set in .env / Render env vars
+REDIRECT_URI         = os.environ.get("REDIRECT_URI", "http://localhost:5000/auth/callback")
 
-# ── Owner config ──────────────────────────────────────────────
+if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+    raise RuntimeError("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set as environment variables.")
+
+# ── Owner / whitelist config ──────────────────────────────────
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
-
-# ── JSONBin config (persistent user storage) ──────────────────
-JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY",      "$2a$10$w0ONBihb1OAly7FIq5fKl.XwjLUmZhCs/kO9SzRZMKMWBVJa8MIKK")
-JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "6a015819250b1311c3313c8c")
-JSONBIN_BASE         = "https://api.jsonbin.io/v3/b"
-
-JSONBIN_HEADERS = {
-    "X-Master-Key": JSONBIN_API_KEY,
-    "Content-Type": "application/json",
-}
+USERS_FILE  = os.path.join(os.path.dirname(__file__), "users.json")
 
 def load_users():
-    """Load users dict from JSONBin."""
+    if not os.path.exists(USERS_FILE):
+        data = {}
+        if OWNER_EMAIL:
+            data[OWNER_EMAIL] = {"email": OWNER_EMAIL, "name": "Owner", "admin": True, "allowed": True}
+        _save_users(data)
+        return data
     try:
-        res = http_requests.get(
-            f"{JSONBIN_BASE}/{JSONBIN_USERS_BIN_ID}/latest",
-            headers={"X-Master-Key": JSONBIN_API_KEY},
-            timeout=10
-        )
-        if res.ok:
-            data = res.json().get("record", {})
-            # Seed owner if missing
-            if OWNER_EMAIL and OWNER_EMAIL not in data:
-                data[OWNER_EMAIL] = {
-                    "email": OWNER_EMAIL, "name": "Owner",
-                    "admin": True, "allowed": True
-                }
-                _save_users_remote(data)
-            return data
-    except Exception as e:
-        print(f"[JSONBin] load_users error: {e}")
-    # Fallback — return just the owner so the app doesn't break
-    base = {}
-    if OWNER_EMAIL:
-        base[OWNER_EMAIL] = {
-            "email": OWNER_EMAIL, "name": "Owner",
-            "admin": True, "allowed": True
-        }
-    return base
+        with open(USERS_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
-def _save_users_remote(data):
-    """Write users dict to JSONBin."""
-    try:
-        http_requests.put(
-            f"{JSONBIN_BASE}/{JSONBIN_USERS_BIN_ID}",
-            headers=JSONBIN_HEADERS,
-            json=data,
-            timeout=10
-        )
-    except Exception as e:
-        print(f"[JSONBin] save_users error: {e}")
+def _save_users(data):
+    with open(USERS_FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
 def save_users(data):
-    _save_users_remote(data)
+    _save_users(data)
 
 def get_user(email):
     return load_users().get(email)
@@ -257,7 +232,6 @@ def auth_callback():
         name    = id_info.get("name", email.split("@")[0])
         picture = id_info.get("picture", "")
 
-        # Load, update, save users to JSONBin
         users = load_users()
         if email not in users:
             auto_allow = bool(OWNER_EMAIL and email == OWNER_EMAIL)
@@ -270,8 +244,8 @@ def auth_callback():
             users[email]["picture"] = picture
         save_users(users)
 
-        session.permanent = True
-        session["user"]   = {"email": email, "name": name, "picture": picture}
+        session.permanent  = True
+        session["user"]    = {"email": email, "name": name, "picture": picture}
         return redirect(url_for("index"))
 
     except Exception as e:
@@ -363,30 +337,6 @@ def admin_add_user():
     save_users(users)
     return jsonify({"ok": True})
 
-# ── Routes — Data (reads & writes via sheets.py) ──────────────
-@app.route("/api/data", methods=["GET", "POST"])
-@access_required
-def api_data():
-    if request.method == "GET":
-        try:
-            data = load_all_data()
-            return jsonify(data)
-        except Exception as e:
-            print(f"[api/data GET] error: {e}")
-            return jsonify({"orders": [], "customers": []})
-
-    if request.method == "POST":
-        data      = request.json or {}
-        orders    = data.get("orders", [])
-        customers = data.get("customers", [])
-        try:
-            sorted_orders = sorted(orders, key=lambda o: o.get("date", ""))
-            save_all_data(sorted_orders, customers)
-        except Exception as e:
-            print(f"[api/data POST] error: {e}")
-            return jsonify({"ok": False, "error": str(e)}), 500
-        return jsonify({"ok": True})
-
 # ── Routes — AI Chat ──────────────────────────────────────────
 @app.route("/api/chat", methods=["POST"])
 @access_required
@@ -421,7 +371,7 @@ def chat():
             context_lines.append(f"  Unpaid: {fmt(client_info.get('unpaid', 0))}")
             context_lines.append(f"  Last order date: {client_info.get('lastDate', 'N/A')}")
             cust_orders = [r for r in dtf_data if r.get("name") == customer]
-            for r in sorted(cust_orders, key=lambda x: x.get("date", ""), reverse=True)[:5]:
+            for r in sorted(cust_orders, key=lambda x: x.get("date",""), reverse=True)[:5]:
                 context_lines.append(
                     f"  • {r.get('date')} — {r.get('qty')}m @ ₱{r.get('rate')}/m = "
                     f"{fmt(r.get('total', 0))} ({'Paid' if r.get('status') == 'pd' else 'Unpaid'})"
@@ -462,7 +412,7 @@ def api_me():
     user  = session["user"]
     admin = is_admin(user["email"])
     return jsonify({"email": user["email"], "name": user["name"],
-                    "picture": user.get("picture", ""), "admin": admin})
+                    "picture": user.get("picture",""), "admin": admin})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
