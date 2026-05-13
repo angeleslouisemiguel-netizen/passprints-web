@@ -38,8 +38,8 @@ REDIRECT_URI         = os.environ.get("REDIRECT_URI")
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "")
 
 # ── JSONBin config (persistent user storage) ──────────────────
-JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY",      "$2a$10$w0ONBihb1OAly7FIq5fKl.XwjLUmZhCs/kO9SzRZMKMWBVJa8MIKK")
-JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID", "6a015819250b1311c3313c8c")
+JSONBIN_API_KEY      = os.environ.get("JSONBIN_API_KEY")
+JSONBIN_USERS_BIN_ID = os.environ.get("JSONBIN_USERS_BIN_ID")
 JSONBIN_BASE         = "https://api.jsonbin.io/v3/b"
 
 JSONBIN_HEADERS = {
