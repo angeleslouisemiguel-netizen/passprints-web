@@ -384,6 +384,18 @@
         .divider { height: 1px; background: var(--border); margin: 1rem 0; }
         .empty { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); font-size: 13px; }
 
+        /* ── TODAY BOX ── */
+        .today-box {
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 14px; border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            font-size: 13px; font-weight: 600; color: var(--text);
+            white-space: nowrap; flex-shrink: 0;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .today-box i { font-size: 15px; color: var(--accent); }
+
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
         @keyframes bgShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -516,6 +528,8 @@
             .metric-grid { grid-template-columns: 1fr 1fr; }
             .dash-grid { grid-template-columns: 1fr; }
             #pp-panel { width: calc(100vw - 24px); right: 12px; }
+            .today-box span { display: none; }
+            .today-box { padding: 7px 10px; }
         }
         @media (max-width: 540px) {
             .form-grid.cols2, .form-grid.cols3 { grid-template-columns: 1fr; }
@@ -568,6 +582,13 @@
         <div class="page active" id="page-dash">
             <div class="topbar">
                 <p class="page-title">Dashboard</p>
+
+                <!-- ── TODAY DATE BOX ── -->
+                <div class="today-box" id="todayBox">
+                    <i class="ti ti-calendar-event"></i>
+                    <span id="todayLabel"></span>
+                </div>
+
                 <input class="top-search" placeholder="Search customers…" oninput="filterDash(this.value)">
                 <select id="monthSel" class="select-sm" onchange="renderDash()">
                     <option value="all">All months</option>
@@ -592,7 +613,7 @@
             <div class="metric-grid" id="metrics"></div>
             <div class="dash-grid">
                 <div>
-                    <p class="section-label">Recent orders</p>
+                    <p class="section-label">Today's orders</p>
                     <div id="dash-recent"></div>
                 </div>
                 <div>
@@ -1056,10 +1077,15 @@
         const month = document.getElementById('monthSel').value;
         let source = month === 'all' ? dtfData : dtfData.filter(r => getMonthKey(r.date) === month);
         if (dashFilter) source = source.filter(r => r.name.toLowerCase().includes(dashFilter.toLowerCase()));
-        const recent = source.slice().reverse();
+
+        /* ── TODAY ONLY for Recent Orders ── */
+        const todayStr = new Date().toISOString().split('T')[0];
+        const recent = source.filter(r => r.date === todayStr).slice().reverse();
+
         document.getElementById('dash-recent').innerHTML = recent.length
-            ? `<div class="scroll-dash">${recent.map(r => `<div class="project-row"><div class="row-head"><span style="font-weight:600;font-size:13px;">${r.name}</span><span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${r.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div><div class="row-meta"><span>${r.date}</span><span>${r.qty}m @ ₱${r.rate}/m</span><span style="margin-left:auto;font-weight:600;">${fmt(r.total)}</span></div></div>`).join('')}</div>`
-            : '<div class="empty">No orders for this period</div>';
+            ? `<div class="scroll-dash">${recent.map(r => `<div class="project-row"><div class="row-head"><span style="font-weight:600;font-size:13px;">${r.name}</span><span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${r.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div><div class="row-meta"><span>${r.qty}m @ ₱${r.rate}/m</span><span style="margin-left:auto;font-weight:600;">${fmt(r.total)}</span></div></div>`).join('')}</div>`
+            : '<div class="empty">No orders today</div>';
+
         const unpaidByClient = {};
         source.filter(r => r.status !== 'pd').forEach(r => {
             if (!unpaidByClient[r.name]) unpaidByClient[r.name] = { name: r.name, total: 0, count: 0 };
@@ -1218,15 +1244,12 @@
         const txns = dtfData.filter(r => r.name === clientName);
         const txn = txns[txnIndex];
         if (!txn) return;
-        // Find and remove this specific order from dtfData
         const globalIndex = dtfData.indexOf(txn);
         if (globalIndex !== -1) dtfData.splice(globalIndex, 1);
-        // Rebuild client map
         rebuildClientMap();
         saveAppState();
         recordAction('add_order', `Order deleted — ${clientName}`, `${txn.qty}m · ${fmt(txn.total)} · ${txn.date}`, snapshot);
         renderDash(); buildClientList(); renderOrders();
-        // If customer has no more orders and not in savedCustomers, remove them entirely
         const remaining = dtfData.filter(r => r.name === clientName);
         const inSaved = savedCustomers.find(c => c.name === clientName);
         if (remaining.length === 0 && !inSaved) {
@@ -1609,16 +1632,13 @@
             ppLoading = true; sendB.disabled = true;
             ppShowTyping();
 
-            /* Build safe history — validate every turn */
             const safeHistory = [];
             ppHistory.slice(-6).forEach(turn => {
                 if (turn.role && turn.text && typeof turn.text === 'string' && turn.text.trim()) {
                     safeHistory.push({ role: turn.role, text: turn.text.trim() });
                 }
             });
-            /* Strip leading non-user turns (Gemini requirement) */
             while (safeHistory.length && safeHistory[0].role !== 'user') safeHistory.shift();
-            /* Remove current message from history (it's the prompt) */
             if (safeHistory.length && safeHistory[safeHistory.length - 1].text === text) safeHistory.pop();
 
             let reply = null, lastErr = null;
@@ -1668,6 +1688,17 @@
 
     /* ── INIT ── */
     document.addEventListener('DOMContentLoaded', async function() {
+        // ── Set today's date label ──
+        (function() {
+            const lbl = document.getElementById('todayLabel');
+            if (lbl) {
+                const now = new Date();
+                lbl.textContent = now.toLocaleDateString('en-PH', {
+                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+                });
+            }
+        })();
+
         try { await loadSavedData(); } catch(e) { console.error('loadSavedData error:', e); }
         try { loadHistory(); } catch(e) { console.error('loadHistory error:', e); }
         try { populateMonthSelectors(); } catch(e) { console.error('populateMonthSelectors error:', e); }
