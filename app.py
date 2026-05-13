@@ -382,7 +382,7 @@ def api_data():
             rows = [["DATE", "CUSTOMER", "QTY (m)", "RATE (₱/m)", "TOTAL (₱)", "STATUS"]]
 
             # One row per order — always appended to the bottom
-            for o in orders:
+            for o in reversed(orders):
                 rows.append([
                     o.get("date",  ""),
                     o.get("name",  ""),
