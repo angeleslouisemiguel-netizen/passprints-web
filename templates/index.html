@@ -376,7 +376,6 @@
                     <div id="avatarBtn" onclick="toggleAccountMenu()" title="Account"
                         style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.2);flex-shrink:0;overflow:hidden;border:2px solid var(--accent);">P</div>
                     <div class="account-menu" id="accountMenu">
-                        <a href="#"><i class="ti ti-settings" style="font-size:16px;color:var(--accent);"></i> Settings</a>
                         <a href="/logout"><i class="ti ti-logout" style="font-size:16px;color:var(--red);"></i> Sign Out</a>
                     </div>
                 </div>
@@ -772,7 +771,7 @@
         const month = document.getElementById('monthSel').value;
         let source = month === 'all' ? dtfData : dtfData.filter(r => getMonthKey(r.date) === month);
         if (dashFilter) source = source.filter(r => r.name.toLowerCase().includes(dashFilter.toLowerCase()));
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('en-CA');
         const recent = source.filter(r => r.date === todayStr).slice().reverse();
         document.getElementById('dash-recent').innerHTML = recent.length
             ? `<div class="scroll-dash">${recent.map(r => `<div class="project-row"><div class="row-head"><span style="font-weight:600;font-size:13px;">${r.name}</span><span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${r.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div><div class="row-meta"><span>${fmtM(r.qty)}m @ ₱${r.rate}/m</span><span style="margin-left:auto;font-weight:600;">${fmt(r.total)}</span></div></div>`).join('')}</div>`
