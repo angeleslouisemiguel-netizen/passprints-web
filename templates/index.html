@@ -309,7 +309,7 @@
 
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: flex-end; z-index: 200; pointer-events: none; }
         .overlay.on { display: flex; pointer-events: auto; }
-        .sheet { background: var(--panel); border-radius: 16px 16px 0 0; width: 100%; max-width: 600px; margin: 0 auto; max-height: 88vh; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.25); }
+        .sheet { background: var(--panel); border-radius: 16px 16px 0 0; width: 100%; max-width: 640px; margin: 0 auto; max-height: 92vh; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.25); }
         .mhdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); z-index: 5; }
         .mtitle { font-size: 16px; font-weight: 700; color: var(--text); }
         .mclose { color: var(--accent); background: none; border: none; cursor: pointer; font-size: 14px; font-family: var(--font); }
@@ -395,6 +395,80 @@
             transition: background 0.3s, border-color 0.3s;
         }
         .today-box i { font-size: 15px; color: var(--accent); }
+
+        /* ── TXN TABLE STYLES (new) ── */
+        .txn-section-hdr {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 12px 8px;
+            border-radius: 8px 8px 0 0;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+        }
+        .txn-section-hdr.paid-hdr {
+            background: rgba(52,199,89,0.08);
+            color: #2a9a45;
+            border: 1px solid rgba(52,199,89,0.2);
+            border-bottom: none;
+        }
+        .txn-section-hdr.unpaid-hdr {
+            background: rgba(255,59,48,0.07);
+            color: #b52b22;
+            border: 1px solid rgba(255,59,48,0.2);
+            border-bottom: none;
+            margin-top: 14px;
+        }
+        [data-theme="dark"] .txn-section-hdr.paid-hdr { color: #34C759; }
+        [data-theme="dark"] .txn-section-hdr.unpaid-hdr { color: #ff6b63; }
+
+        .txn-table-wrap {
+            border: 1px solid var(--border);
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+            margin-bottom: 2px;
+        }
+        .txn-table-wrap.paid-wrap { border-color: rgba(52,199,89,0.2); }
+        .txn-table-wrap.unpaid-wrap { border-color: rgba(255,59,48,0.2); }
+
+        .txn-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .txn-tbl th {
+            padding: 7px 10px; text-align: left;
+            font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+            color: var(--muted); background: var(--bg-secondary);
+            position: sticky; top: 0; z-index: 2;
+        }
+        .txn-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+        .txn-tbl tr:last-child td { border-bottom: none; }
+        .txn-tbl tr:hover td { background: var(--row-hover); }
+        .txn-tbl tr.txn-selected td { background: rgba(91,75,255,0.07); }
+
+        /* checkbox cell */
+        .txn-cb { width: 32px; padding: 9px 4px 9px 10px !important; }
+        .txn-checkbox {
+            width: 16px; height: 16px; cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        /* ── BULK ACTION BAR ── */
+        .bulk-bar {
+            display: none; align-items: center; gap: 8px;
+            padding: 8px 12px; border-radius: 8px;
+            background: rgba(91,75,255,0.08);
+            border: 1px solid rgba(91,75,255,0.25);
+            margin-bottom: 10px; flex-wrap: wrap;
+            animation: fadeUp 200ms cubic-bezier(.2,.9,.2,1) both;
+        }
+        .bulk-bar.visible { display: flex; }
+        .bulk-bar .bulk-label {
+            font-size: 12px; font-weight: 700; color: var(--accent); flex: 1;
+        }
+        .bulk-btn {
+            padding: 6px 12px; border-radius: 7px; border: none; cursor: pointer;
+            font-size: 12px; font-weight: 700; font-family: var(--font);
+            display: inline-flex; align-items: center; gap: 5px; transition: opacity .15s, transform .15s;
+        }
+        .bulk-btn:hover { opacity: .85; transform: translateY(-1px); }
+        .bulk-btn.bb-receipt { background: var(--accent); color: #fff; }
+        .bulk-btn.bb-delete  { background: rgba(255,59,48,0.1); color: var(--red); border: 1px solid rgba(255,59,48,0.25); }
+        .bulk-btn.bb-clear   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -582,13 +656,10 @@
         <div class="page active" id="page-dash">
             <div class="topbar">
                 <p class="page-title">Dashboard</p>
-
-                <!-- ── TODAY DATE BOX ── -->
                 <div class="today-box" id="todayBox">
                     <i class="ti ti-calendar-event"></i>
                     <span id="todayLabel"></span>
                 </div>
-
                 <input class="top-search" placeholder="Search customers…" oninput="filterDash(this.value)">
                 <select id="monthSel" class="select-sm" onchange="renderDash()">
                     <option value="all">All months</option>
@@ -764,7 +835,7 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- ── FLOATING ChatGPT CHAT WIDGET ── -->
+<!-- ── FLOATING CHAT WIDGET ── -->
 <button id="pp-fab" aria-label="Open ChatGPT chat">
     <i class="ti ti-message-circle" aria-hidden="true"></i>
     <span id="pp-fab-badge">GPT</span>
@@ -779,7 +850,6 @@
         </div>
         <button id="pp-close-btn" aria-label="Close chat"><i class="ti ti-x" aria-hidden="true"></i></button>
     </div>
-
     <div id="pp-agent-tabs" role="tablist">
         <button class="pp-tab pp-active" data-agent="quote" role="tab">💸 Quote</button>
         <button class="pp-tab" data-agent="receipt" role="tab">🧾 Receipt</button>
@@ -787,9 +857,7 @@
         <button class="pp-tab" data-agent="expense" role="tab">📋 Expenses</button>
         <button class="pp-tab" data-agent="report" role="tab">📊 Analyst</button>
     </div>
-
     <div id="pp-messages" role="log" aria-live="polite"></div>
-
     <div id="pp-input-row">
         <textarea id="pp-input" placeholder="Type a message…" rows="1" aria-label="Message input"></textarea>
         <button id="pp-send" aria-label="Send message"><i class="ti ti-send" aria-hidden="true"></i></button>
@@ -934,7 +1002,6 @@
 
     /* ── SERVER DATA ── */
     async function loadSavedData() {
-        // 1. Try server first
         try {
             const res = await fetch('/api/data');
             if (res.ok) {
@@ -958,7 +1025,6 @@
             }
         } catch (err) { console.warn('Server load failed, trying localStorage:', err); }
 
-        // 2. Fall back to localStorage
         try {
             const raw = localStorage.getItem(APP_DATA_KEY);
             if (raw) {
@@ -987,11 +1053,7 @@
     let autoSaveTimer;
     function saveAppState() {
         clearTimeout(autoSaveTimer);
-        // Save to localStorage immediately so refresh never loses data
-        try {
-            localStorage.setItem(APP_DATA_KEY, JSON.stringify({ orders: dtfData, customers: savedCustomers }));
-        } catch(e) { console.warn('localStorage save failed:', e); }
-        // Also push to server (debounced)
+        try { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ orders: dtfData, customers: savedCustomers })); } catch(e) {}
         autoSaveTimer = setTimeout(_pushDataToServer, 600);
     }
 
@@ -1077,15 +1139,11 @@
         const month = document.getElementById('monthSel').value;
         let source = month === 'all' ? dtfData : dtfData.filter(r => getMonthKey(r.date) === month);
         if (dashFilter) source = source.filter(r => r.name.toLowerCase().includes(dashFilter.toLowerCase()));
-
-        /* ── TODAY ONLY for Recent Orders ── */
         const todayStr = new Date().toISOString().split('T')[0];
         const recent = source.filter(r => r.date === todayStr).slice().reverse();
-
         document.getElementById('dash-recent').innerHTML = recent.length
             ? `<div class="scroll-dash">${recent.map(r => `<div class="project-row"><div class="row-head"><span style="font-weight:600;font-size:13px;">${r.name}</span><span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}">${r.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div><div class="row-meta"><span>${r.qty}m @ ₱${r.rate}/m</span><span style="margin-left:auto;font-weight:600;">${fmt(r.total)}</span></div></div>`).join('')}</div>`
             : '<div class="empty">No orders today</div>';
-
         const unpaidByClient = {};
         source.filter(r => r.status !== 'pd').forEach(r => {
             if (!unpaidByClient[r.name]) unpaidByClient[r.name] = { name: r.name, total: 0, count: 0 };
@@ -1147,42 +1205,121 @@
 
     function openClientById(name) { const c = clientMap[name]; if (c) openClient(c); }
 
-    function toggleTxnStatus(clientName, txnIndex) {
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
-        if (!txn) return;
-        const isCurrentlyPaid = txn.status === 'pd';
-        const newStatus = isCurrentlyPaid ? '' : 'pd';
-        const actionLabel = isCurrentlyPaid ? 'Mark as Unpaid' : 'Mark as Paid';
-        const actionColor = isCurrentlyPaid ? 'var(--red)' : 'var(--green)';
-        const actionIcon = isCurrentlyPaid ? 'ti-x' : 'ti-check';
-        openModal(`<div class="mhdr"><button class="mclose" onclick="openClient('${clientName}')">← Back</button><span class="mtitle">Update Payment</span><span></span></div>
-        <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
-          <div style="width:54px;height:54px;border-radius:50%;background:${isCurrentlyPaid ? 'rgba(255,59,48,0.1)' : 'rgba(52,199,89,0.1)'};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="ti ${actionIcon}" style="font-size:24px;color:${actionColor};"></i></div>
-          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">${actionLabel}?</div>
-          <div style="background:var(--bg-secondary);border-radius:10px;padding:12px 16px;margin-bottom:18px;text-align:left;">
-            <div style="font-size:13px;color:var(--text);font-weight:600;">${txn.qty}m @ ₱${txn.rate}/m</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${txn.date} · ${fmt(txn.total)}</div>
-            <div style="margin-top:8px;"><span class="badge ${isCurrentlyPaid ? 'paid' : 'unpaid'}">${isCurrentlyPaid ? 'Currently Paid' : 'Currently Unpaid'}</span></div>
+    /* ══════════════════════════════════════════════════════
+       OPEN CLIENT — SPLIT PAID / UNPAID + MULTI-SELECT
+    ══════════════════════════════════════════════════════ */
+    function openClient(cOrName) {
+        const name = (typeof cOrName === 'string') ? cOrName : cOrName.name;
+        const c = clientMap[name];
+        if (!c) return;
+
+        const txns = dtfData.filter(r => r.name === c.name);
+        const paidTxns   = txns.map((r, gi) => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status === 'pd');
+        const unpaidTxns = txns.map((r, gi) => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status !== 'pd');
+
+        const paidTotal   = paidTxns.reduce((s, r) => s + r.total, 0);
+        const unpaidTotal = unpaidTxns.reduce((s, r) => s + r.total, 0);
+        const safeName = c.name.replace(/'/g, "\\'");
+
+        function buildTxnTable(list, type) {
+            if (!list.length) return `<div style="padding:12px 14px;font-size:12px;color:var(--muted);font-style:italic;">No ${type} orders</div>`;
+            const allCb = `cb-all-${type}`;
+            return `
+            <table class="txn-tbl" id="tbl-${type}">
+              <thead>
+                <tr>
+                  <th class="txn-cb"><input type="checkbox" class="txn-checkbox" id="${allCb}" onchange="toggleSelectAll('${type}','${safeName}')" title="Select all"></th>
+                  <th>Date</th><th>Meters</th><th>Rate</th><th>Total</th>
+                  <th style="text-align:right;padding-right:10px;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${list.map(r => `
+                <tr class="txn-row" data-gi="${r._gi}" data-type="${type}">
+                  <td class="txn-cb"><input type="checkbox" class="txn-checkbox txn-row-cb" data-gi="${r._gi}" data-type="${type}" onchange="onRowCheck('${safeName}')"></td>
+                  <td>${r.date}</td>
+                  <td style="font-weight:600;">${r.qty}m</td>
+                  <td>₱${r.rate}/m</td>
+                  <td style="font-weight:700;">${fmt(r.total)}</td>
+                  <td style="text-align:right;padding-right:8px;">
+                    <div style="display:flex;gap:5px;justify-content:flex-end;align-items:center;">
+                      <button onclick="toggleTxnByGi('${safeName}',${r._gi})" title="${r.status === 'pd' ? 'Mark Unpaid' : 'Mark Paid'}"
+                        style="background:${r.status === 'pd' ? 'rgba(255,59,48,0.1)' : 'rgba(52,199,89,0.12)'};border:1px solid ${r.status === 'pd' ? 'rgba(255,59,48,0.25)' : 'rgba(52,199,89,0.3)'};color:${r.status === 'pd' ? 'var(--red)' : 'var(--green)'};border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                        <i class="ti ${r.status === 'pd' ? 'ti-x' : 'ti-check'}" style="font-size:13px;"></i>
+                      </button>
+                      <button onclick="confirmDeleteOrderByGi('${safeName}',${r._gi})" title="Delete order"
+                        style="background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:var(--red);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                        <i class="ti ti-trash" style="font-size:13px;"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>`).join('')}
+              </tbody>
+            </table>`;
+        }
+
+        const html = `
+        <div class="mhdr">
+          <button class="mclose" onclick="closeModal()">← Back</button>
+          <span class="mtitle">${c.name}</span>
+          <span class="badge ${c.unpaid > 0 ? 'unpaid' : 'paid'}">${c.unpaid > 0 ? 'Has Balance' : 'All Paid'}</span>
+        </div>
+        <div class="fsec">
+
+          <!-- STATS -->
+          <div class="stats-grid" style="margin-bottom:14px;">
+            <div class="scard"><div class="slabel">Total Spent</div><div class="sval" style="font-size:16px;">${fmt(c.total)}</div></div>
+            <div class="scard"><div class="slabel">Orders</div><div class="sval" style="font-size:16px;">${txns.length}</div></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="openClient('${clientName}')">Cancel</button>
-            <button class="ibtn" style="background:${actionColor};color:#fff;border:none;" onclick="confirmToggleTxn('${clientName}',${txnIndex},'${newStatus}')"><i class="ti ${actionIcon}"></i> ${actionLabel}</button>
+
+          <!-- BULK ACTION BAR -->
+          <div class="bulk-bar" id="bulk-bar">
+            <span class="bulk-label" id="bulk-label">0 selected</span>
+            <button class="bulk-btn bb-receipt" onclick="bulkGenReceipt('${safeName}')"><i class="ti ti-receipt" style="font-size:13px;"></i> Generate Receipt</button>
+            <button class="bulk-btn bb-delete" onclick="bulkDeleteOrders('${safeName}')"><i class="ti ti-trash" style="font-size:13px;"></i> Delete Selected</button>
+            <button class="bulk-btn bb-clear" onclick="clearAllChecks('${safeName}')"><i class="ti ti-x" style="font-size:12px;"></i> Clear</button>
           </div>
-        </div>`);
+
+          <!-- PAID TABLE -->
+          <div class="txn-section-hdr paid-hdr">
+            <span>✅ Paid Orders</span>
+            <span style="font-weight:800;">${fmt(paidTotal)}</span>
+          </div>
+          <div class="txn-table-wrap paid-wrap">
+            ${buildTxnTable(paidTxns, 'paid')}
+          </div>
+
+          <!-- UNPAID TABLE -->
+          <div class="txn-section-hdr unpaid-hdr">
+            <span>❗ Unpaid Orders</span>
+            <span style="font-weight:800;">${fmt(unpaidTotal)}</span>
+          </div>
+          <div class="txn-table-wrap unpaid-wrap">
+            ${buildTxnTable(unpaidTxns, 'unpaid')}
+          </div>
+
+          <!-- FOOTER ACTIONS -->
+          <div style="margin-top:14px;">
+            <button class="ibtn ibtn-bl" onclick="quickReceipt('${safeName}',${c.total});closeModal();"><i class="ti ti-receipt"></i> Generate Full Receipt</button>
+            ${txns.length > 0 ? `<button class="ibtn ibtn-re" onclick="closeModal();confirmDeleteClient('${safeName}');" style="margin-top:6px;"><i class="ti ti-trash"></i> Delete Customer</button>` : ''}
+          </div>
+        </div>`;
+
+        openModal(html);
     }
 
-    function confirmToggleTxn(clientName, txnIndex, newStatus) {
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
+    /* ── helper: toggle a single txn by its global dtfData index ── */
+    function toggleTxnByGi(clientName, gi) {
+        const txn = dtfData[gi];
         if (!txn) return;
         const wasPaid = txn.status === 'pd';
+        const newStatus = wasPaid ? '' : 'pd';
         const snapshot = snapshotState();
         txn.status = newStatus;
         const c = clientMap[clientName];
         if (c) {
-            if (wasPaid && newStatus === '') c.unpaid += txn.total;
-            else if (!wasPaid && newStatus === 'pd') c.unpaid = Math.max(0, c.unpaid - txn.total);
+            if (wasPaid) c.unpaid += txn.total;
+            else c.unpaid = Math.max(0, c.unpaid - txn.total);
         }
         toast(newStatus === 'pd' ? '✅ Marked as Paid!' : '🔴 Marked as Unpaid');
         saveAppState();
@@ -1191,39 +1328,11 @@
         openClient(clientName);
     }
 
-    function openClient(cOrName) {
-        const name = (typeof cOrName === 'string') ? cOrName : cOrName.name;
-        const c = clientMap[name];
-        if (!c) return;
-        const txns = dtfData.filter(r => r.name === c.name);
-        const safeName = c.name.replace(/'/g, "\\'");
-        openModal(`<div class="mhdr"><button class="mclose" onclick="closeModal()">← Back</button><span class="mtitle">${c.name}</span><span class="badge ${c.unpaid > 0 ? 'unpaid' : 'paid'}">${c.unpaid > 0 ? 'Has Balance' : 'All Paid'}</span></div>
-        <div class="fsec">
-          <div class="stats-grid" style="margin-bottom:14px;">
-            <div class="scard"><div class="slabel">Total Spent</div><div class="sval" style="font-size:16px;">${fmt(c.total)}</div></div>
-            <div class="scard"><div class="slabel">Orders</div><div class="sval" style="font-size:16px;">${c.orders}</div></div>
-          </div>
-          <div class="flabel" style="margin-bottom:6px;">Transaction History <span style="font-size:11px;color:var(--muted);font-weight:400;">· tap row to change status · 🗑 to delete</span></div>
-          <div class="clist" style="margin:0 0 12px;">
-            ${txns.map((r, i) => `<div class="crow" style="cursor:pointer;" onmouseenter="this.style.background='var(--row-hover)'" onmouseleave="this.style.background=''">
-              <div class="ico" style="background:${r.status === 'pd' ? 'var(--green)' : 'var(--red)'}" onclick="toggleTxnStatus('${safeName}',${i})"><i class="ti ti-${r.status === 'pd' ? 'check' : 'clock'}"></i></div>
-              <div class="rmain" onclick="toggleTxnStatus('${safeName}',${i})"><div class="rt">${r.qty}m @ ₱${r.rate}/m</div><div class="rs">${r.date}</div></div>
-              <div class="rr" style="gap:6px;align-items:center;">
-                <span class="badge ${r.status === 'pd' ? 'paid' : 'unpaid'}" onclick="toggleTxnStatus('${safeName}',${i})">${fmt(r.total)}</span>
-                <button onclick="event.stopPropagation();confirmDeleteOrder('${safeName}',${i})" style="background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:var(--red);border-radius:7px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;" title="Delete order"><i class="ti ti-trash" style="font-size:13px;"></i></button>
-              </div>
-            </div>`).join('')}
-          </div>
-          <button class="ibtn ibtn-bl" onclick="quickReceipt('${safeName}',${c.total});closeModal();"><i class="ti ti-receipt"></i> Generate Receipt</button>
-          ${txns.length > 0 ? `<button class="ibtn ibtn-re" onclick="closeModal();confirmDeleteClient('${safeName}');" style="margin-top:6px;"><i class="ti ti-trash"></i> Delete Customer</button>` : ''}
-        </div>`);
-    }
-
-    function confirmDeleteOrder(clientName, txnIndex) {
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
+    /* ── helper: delete order by global index ── */
+    function confirmDeleteOrderByGi(clientName, gi) {
+        const txn = dtfData[gi];
         if (!txn) return;
-        openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);"><button class="mclose" onclick="openClient('${clientName.replace(/'/g, "\\'")}')">← Back</button><span class="mtitle" style="color:var(--red);">Delete Order</span><span></span></div>
+        openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);"><button class="mclose" onclick="openClient('${clientName.replace(/'/g,"\\'")}')">← Back</button><span class="mtitle" style="color:var(--red);">Delete Order</span><span></span></div>
         <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
           <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,59,48,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="ti ti-trash" style="font-size:24px;color:var(--red);"></i></div>
           <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Delete this order?</div>
@@ -1233,19 +1342,17 @@
             <div style="margin-top:6px;"><span class="badge ${txn.status === 'pd' ? 'paid' : 'unpaid'}">${txn.status === 'pd' ? 'Paid' : 'Unpaid'}</span></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="openClient('${clientName.replace(/'/g, "\\'")}')">Cancel</button>
-            <button class="ibtn ibtn-re" onclick="deleteOrder('${clientName.replace(/'/g, "\\'")}',${txnIndex})"><i class="ti ti-trash"></i> Delete</button>
+            <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="openClient('${clientName.replace(/'/g,"\\'")}')">Cancel</button>
+            <button class="ibtn ibtn-re" onclick="deleteOrderByGi('${clientName.replace(/'/g,"\\'")}',${gi})"><i class="ti ti-trash"></i> Delete</button>
           </div>
         </div>`);
     }
 
-    function deleteOrder(clientName, txnIndex) {
+    function deleteOrderByGi(clientName, gi) {
         const snapshot = snapshotState();
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
+        const txn = dtfData[gi];
         if (!txn) return;
-        const globalIndex = dtfData.indexOf(txn);
-        if (globalIndex !== -1) dtfData.splice(globalIndex, 1);
+        dtfData.splice(gi, 1);
         rebuildClientMap();
         saveAppState();
         recordAction('add_order', `Order deleted — ${clientName}`, `${txn.qty}m · ${fmt(txn.total)} · ${txn.date}`, snapshot);
@@ -1253,17 +1360,187 @@
         const remaining = dtfData.filter(r => r.name === clientName);
         const inSaved = savedCustomers.find(c => c.name === clientName);
         if (remaining.length === 0 && !inSaved) {
-            delete clientMap[clientName];
-            const idx = clients.findIndex(c => c.name === clientName);
-            if (idx !== -1) clients.splice(idx, 1);
-            saveAppState();
-            renderDash(); buildClientList(); renderOrders();
-            closeModal();
-            toast(`🗑️ Order deleted · ${clientName} removed (no orders left)`);
+            closeModal(); toast(`🗑️ Order deleted · ${clientName} removed`);
         } else {
             toast('🗑️ Order deleted');
             openClient(clientName);
         }
+    }
+
+    /* ── MULTI-SELECT HELPERS ── */
+    function getCheckedGis() {
+        return [...document.querySelectorAll('.txn-row-cb:checked')].map(cb => parseInt(cb.dataset.gi));
+    }
+
+    function onRowCheck(clientName) {
+        const gis = getCheckedGis();
+        const bar  = document.getElementById('bulk-bar');
+        const lbl  = document.getElementById('bulk-label');
+        if (!bar || !lbl) return;
+        if (gis.length > 0) {
+            bar.classList.add('visible');
+            const selTotal = gis.reduce((s, gi) => s + (dtfData[gi] ? dtfData[gi].total : 0), 0);
+            lbl.textContent = `${gis.length} selected · ${fmt(selTotal)}`;
+        } else {
+            bar.classList.remove('visible');
+        }
+        // sync "select all" checkboxes
+        ['paid','unpaid'].forEach(type => {
+            const allCb = document.getElementById(`cb-all-${type}`);
+            const rowCbs = [...document.querySelectorAll(`.txn-row-cb[data-type="${type}"]`)];
+            if (allCb && rowCbs.length) {
+                const checkedCount = rowCbs.filter(cb => cb.checked).length;
+                allCb.checked = checkedCount === rowCbs.length;
+                allCb.indeterminate = checkedCount > 0 && checkedCount < rowCbs.length;
+            }
+        });
+    }
+
+    function toggleSelectAll(type, clientName) {
+        const allCb = document.getElementById(`cb-all-${type}`);
+        const rowCbs = [...document.querySelectorAll(`.txn-row-cb[data-type="${type}"]`)];
+        rowCbs.forEach(cb => cb.checked = allCb.checked);
+        onRowCheck(clientName);
+    }
+
+    function clearAllChecks(clientName) {
+        document.querySelectorAll('.txn-row-cb').forEach(cb => cb.checked = false);
+        ['paid','unpaid'].forEach(type => {
+            const allCb = document.getElementById(`cb-all-${type}`);
+            if (allCb) { allCb.checked = false; allCb.indeterminate = false; }
+        });
+        const bar = document.getElementById('bulk-bar');
+        if (bar) bar.classList.remove('visible');
+    }
+
+    /* ── BULK: Generate Receipt ── */
+   function bulkGenReceipt(clientName) {
+    const gis = getCheckedGis();
+    if (!gis.length) { toast('Select at least one order'); return; }
+    const selected = gis.map(gi => dtfData[gi]).filter(Boolean);
+    const totalAmt = selected.reduce((s, r) => s + r.total, 0);
+    const totalMeters = selected.reduce((s, r) => s + r.qty, 0);
+    const rn = Math.floor(Math.random() * 900) + 1100;
+    const now = new Date().toLocaleDateString('en-PH');
+
+    const lineItems = selected.map(r =>
+        `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+           <span>${r.qty}m @ ₱${r.rate}/m <span style="font-size:10px;color:var(--muted);">(${r.date})</span></span>
+           <span style="font-weight:600;">${fmt(r.total)}</span>
+         </div>`
+    ).join('');
+
+    openModal(`
+    <div class="mhdr">
+      <button class="mclose" onclick="closeModal()">← Back</button>
+      <span class="mtitle">Receipt</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">#${rn}</span>
+    </div>
+    <div class="fsec">
+      <div style="background:var(--card-bg);border-radius:12px;border:1px solid var(--border);padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:800;font-size:15px;color:var(--text)">passprints.</div>
+            <div style="font-size:10px;color:var(--muted)">DTF Film Service</div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--cyan)"></span>
+            <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--magenta)"></span>
+            <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--yellow)"></span>
+            <span style="display:block;width:18px;height:4px;border-radius:3px;background:#0b0b0b"></span>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Receipt #</span><span>${rn}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Date</span><span>${now}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Customer</span><span style="font-weight:600;">${clientName}</span></div>
+        <div class="divider"></div>
+        ${lineItems}
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="color:var(--muted)">Total meters</span><span style="font-weight:600;">${totalMeters}m</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;"><span>TOTAL</span><span style="color:var(--green);">${fmt(totalAmt)}</span></div>
+        <div class="divider"></div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;">BPI: 9929260433 · BDO: 005520304611 · GCash available</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
+        <button class="ibtn" style="font-size:13px;padding:9px;background:var(--green);color:#fff;" onclick="shareR()"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+      </div>
+    </div>`);
+
+    toast(`🧾 Receipt for ${gis.length} order${gis.length > 1 ? 's' : ''} generated`);
+}
+
+    /* ── BULK: Delete Selected Orders ── */
+    function bulkDeleteOrders(clientName) {
+        const gis = getCheckedGis();
+        if (!gis.length) { toast('Select at least one order'); return; }
+        const totalAmt = gis.reduce((s, gi) => s + (dtfData[gi] ? dtfData[gi].total : 0), 0);
+        openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.2);">
+          <button class="mclose" onclick="openClient('${clientName.replace(/'/g,"\\'")}')">← Back</button>
+          <span class="mtitle" style="color:var(--red);">Delete ${gis.length} Order${gis.length > 1 ? 's' : ''}</span>
+          <span></span>
+        </div>
+        <div class="fsec" style="text-align:center;padding:24px 18px 20px;">
+          <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,59,48,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="ti ti-trash" style="font-size:24px;color:var(--red);"></i></div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Delete ${gis.length} selected order${gis.length > 1 ? 's' : ''}?</div>
+          <div style="background:rgba(255,59,48,0.07);border:1px solid rgba(255,59,48,0.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;">
+            <div style="font-size:13px;font-weight:600;color:var(--red);">Total: ${fmt(totalAmt)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">This cannot be undone after save.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="ibtn" style="background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);" onclick="openClient('${clientName.replace(/'/g,"\\'")}')">Cancel</button>
+            <button class="ibtn ibtn-re" onclick="executeBulkDelete('${clientName.replace(/'/g,"\\'")}',JSON.parse('[${gis.join(',')}]'))"><i class="ti ti-trash"></i> Delete All</button>
+          </div>
+        </div>`);
+    }
+
+    function executeBulkDelete(clientName, gis) {
+        const snapshot = snapshotState();
+        // Sort descending so splicing doesn't shift indices
+        gis.sort((a, b) => b - a).forEach(gi => { if (dtfData[gi]) dtfData.splice(gi, 1); });
+        rebuildClientMap();
+        saveAppState();
+        recordAction('add_order', `Bulk deleted ${gis.length} orders — ${clientName}`, `${gis.length} order${gis.length > 1 ? 's' : ''} removed`, snapshot);
+        renderDash(); buildClientList(); renderOrders();
+        const remaining = dtfData.filter(r => r.name === clientName);
+        const inSaved = savedCustomers.find(c => c.name === clientName);
+        toast(`🗑️ ${gis.length} order${gis.length > 1 ? 's' : ''} deleted`);
+        if (remaining.length === 0 && !inSaved) closeModal();
+        else openClient(clientName);
+    }
+
+    /* ── legacy toggleTxnStatus kept for compatibility ── */
+    function toggleTxnStatus(clientName, txnIndex) {
+        const txns = dtfData.filter(r => r.name === clientName);
+        const txn = txns[txnIndex];
+        if (!txn) return;
+        const gi = dtfData.indexOf(txn);
+        toggleTxnByGi(clientName, gi);
+    }
+
+    function confirmToggleTxn(clientName, txnIndex, newStatus) {
+        const txns = dtfData.filter(r => r.name === clientName);
+        const txn = txns[txnIndex];
+        if (!txn) return;
+        const gi = dtfData.indexOf(txn);
+        toggleTxnByGi(clientName, gi);
+    }
+
+    function confirmDeleteOrder(clientName, txnIndex) {
+        const txns = dtfData.filter(r => r.name === clientName);
+        const txn = txns[txnIndex];
+        if (!txn) return;
+        const gi = dtfData.indexOf(txn);
+        confirmDeleteOrderByGi(clientName, gi);
+    }
+
+    function deleteOrder(clientName, txnIndex) {
+        const txns = dtfData.filter(r => r.name === clientName);
+        const txn = txns[txnIndex];
+        if (!txn) return;
+        const gi = dtfData.indexOf(txn);
+        deleteOrderByGi(clientName, gi);
     }
 
     /* ── ORDERS ── */
@@ -1556,161 +1833,85 @@
             report:  "Ask me anything — revenue, top clients, unpaid orders, trends."
         };
 
-        function ppTime() {
-            return new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
-        }
+        function ppTime() { return new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }); }
 
         function ppAddMsg(role, text, isErr) {
             const d = document.createElement('div');
             d.className = 'pp-msg ' + (isErr ? 'pp-err' : (role === 'user' ? 'pp-user' : 'pp-ai'));
-            d.innerHTML = '<div>' + text.replace(/\n/g, '<br>') + '</div>'
-                        + '<div class="pp-msg-time">' + ppTime() + '</div>';
-            msgs.appendChild(d);
-            msgs.scrollTop = msgs.scrollHeight;
+            d.innerHTML = '<div>' + text.replace(/\n/g, '<br>') + '</div>' + '<div class="pp-msg-time">' + ppTime() + '</div>';
+            msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
         }
 
         function ppShowTyping() {
             const d = document.createElement('div');
             d.className = 'pp-typing'; d.id = 'pp-typing';
             d.innerHTML = '<div class="pp-dots"><span></span><span></span><span></span></div>';
-            msgs.appendChild(d);
-            msgs.scrollTop = msgs.scrollHeight;
+            msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
         }
 
         function ppRemoveTyping() { const el = document.getElementById('pp-typing'); if (el) el.remove(); }
 
         function ppShowEmpty(agent) {
             msgs.innerHTML = '';
-            const chips = (ppSuggestions[agent] || [])
-                .map(s => `<button class="pp-chip" onclick="window._ppSend('${s.replace(/'/g,"\\'")}')">` + s + '</button>')
-                .join('');
-            msgs.innerHTML = '<div class="pp-empty"><i class="ti ti-brand-openai" aria-hidden="true"></i>'
-                + '<div>' + (ppWelcome[agent] || 'How can I help?') + '</div>'
-                + '<div class="pp-chips">' + chips + '</div></div>';
+            const chips = (ppSuggestions[agent] || []).map(s => `<button class="pp-chip" onclick="window._ppSend('${s.replace(/'/g,"\\'")}')">` + s + '</button>').join('');
+            msgs.innerHTML = '<div class="pp-empty"><i class="ti ti-brand-openai" aria-hidden="true"></i><div>' + (ppWelcome[agent] || 'How can I help?') + '</div><div class="pp-chips">' + chips + '</div></div>';
         }
 
         window._ppSend = function(t) { input.value = t; ppSend(); };
 
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                ppAgent = this.dataset.agent;
-                ppHistory = [];
-                tabs.forEach(t => t.classList.toggle('pp-active', t === this));
-                ppShowEmpty(ppAgent);
-            });
-        });
-
-        fab.addEventListener('click', function() {
-            ppOpen = !ppOpen;
-            panel.classList.toggle('pp-hidden', !ppOpen);
-            if (ppOpen) { ppShowEmpty(ppAgent); setTimeout(() => input.focus(), 200); }
-        });
-
+        tabs.forEach(tab => { tab.addEventListener('click', function() { ppAgent = this.dataset.agent; ppHistory = []; tabs.forEach(t => t.classList.toggle('pp-active', t === this)); ppShowEmpty(ppAgent); }); });
+        fab.addEventListener('click', function() { ppOpen = !ppOpen; panel.classList.toggle('pp-hidden', !ppOpen); if (ppOpen) { ppShowEmpty(ppAgent); setTimeout(() => input.focus(), 200); } });
         closeB.addEventListener('click', function() { ppOpen = false; panel.classList.add('pp-hidden'); });
-
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ppSend(); }
-        });
-
-        input.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 80) + 'px';
-        });
-
+        input.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ppSend(); } });
+        input.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 80) + 'px'; });
         sendB.addEventListener('click', ppSend);
 
         async function ppSend() {
             const text = input.value.trim();
             if (!text || ppLoading) return;
-
             const empty = msgs.querySelector('.pp-empty');
             if (empty) empty.remove();
-
             ppAddMsg('user', text);
             ppHistory.push({ role: 'user', text });
             input.value = ''; input.style.height = 'auto';
             ppLoading = true; sendB.disabled = true;
             ppShowTyping();
-
             const safeHistory = [];
-            ppHistory.slice(-6).forEach(turn => {
-                if (turn.role && turn.text && typeof turn.text === 'string' && turn.text.trim()) {
-                    safeHistory.push({ role: turn.role, text: turn.text.trim() });
-                }
-            });
+            ppHistory.slice(-6).forEach(turn => { if (turn.role && turn.text && typeof turn.text === 'string' && turn.text.trim()) safeHistory.push({ role: turn.role, text: turn.text.trim() }); });
             while (safeHistory.length && safeHistory[0].role !== 'user') safeHistory.shift();
             if (safeHistory.length && safeHistory[safeHistory.length - 1].text === text) safeHistory.pop();
-
             let reply = null, lastErr = null;
-
             for (let attempt = 0; attempt < 3; attempt++) {
                 try {
-                    const res = await fetch('/api/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            agent:   ppAgent,
-                            message: text,
-                            history: safeHistory,
-                            dtfData: typeof dtfData !== 'undefined' ? dtfData : [],
-                            clients: typeof clients !== 'undefined' ? clients : []
-                        })
-                    });
-
-                    if (!res.ok) {
-                        const errText = await res.text();
-                        throw new Error('Server error ' + res.status + ': ' + errText);
-                    }
-
+                    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent: ppAgent, message: text, history: safeHistory, dtfData: typeof dtfData !== 'undefined' ? dtfData : [], clients: typeof clients !== 'undefined' ? clients : [] }) });
+                    if (!res.ok) { const errText = await res.text(); throw new Error('Server error ' + res.status + ': ' + errText); }
                     const data = await res.json();
                     if (!data.reply) throw new Error('Empty response from server');
-                    reply = data.reply;
-                    break;
-                } catch(err) {
-                    lastErr = err.message;
-                    if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
-                }
+                    reply = data.reply; break;
+                } catch(err) { lastErr = err.message; if (attempt < 2) await new Promise(r => setTimeout(r, 1500)); }
             }
-
-            ppRemoveTyping();
-            ppLoading = false;
-            sendB.disabled = false;
-
-            if (reply) {
-                ppAddMsg('ai', reply);
-                ppHistory.push({ role: 'model', text: reply });
-            } else {
-                ppAddMsg('ai', 'Could not reach ChatGPT after 3 tries. Please try again.\n\n' + lastErr, true);
-            }
+            ppRemoveTyping(); ppLoading = false; sendB.disabled = false;
+            if (reply) { ppAddMsg('ai', reply); ppHistory.push({ role: 'model', text: reply }); }
+            else ppAddMsg('ai', 'Could not reach ChatGPT after 3 tries. Please try again.\n\n' + lastErr, true);
             input.focus();
         }
     })();
 
     /* ── INIT ── */
     document.addEventListener('DOMContentLoaded', async function() {
-        // ── Set today's date label ──
         (function() {
             const lbl = document.getElementById('todayLabel');
-            if (lbl) {
-                const now = new Date();
-                lbl.textContent = now.toLocaleDateString('en-PH', {
-                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-                });
-            }
+            if (lbl) { const now = new Date(); lbl.textContent = now.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }); }
         })();
-
         try { await loadSavedData(); } catch(e) { console.error('loadSavedData error:', e); }
         try { loadHistory(); } catch(e) { console.error('loadHistory error:', e); }
         try { populateMonthSelectors(); } catch(e) { console.error('populateMonthSelectors error:', e); }
         try { renderDash(); } catch(e) { console.error('renderDash error:', e); }
         try { buildClientList(); } catch(e) { console.error('buildClientList error:', e); }
         try { renderOrders(); } catch(e) { console.error('renderOrders error:', e); }
-
         document.querySelectorAll('.nav-btn').forEach(btn => {
             if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'clients'")) {
-                btn.addEventListener('click', () => {
-                    setTimeout(() => { const hint = document.getElementById('importHint'); if (hint) hint.style.display = 'block'; }, 50);
-                });
+                btn.addEventListener('click', () => { setTimeout(() => { const hint = document.getElementById('importHint'); if (hint) hint.style.display = 'block'; }, 50); });
             }
         });
     });
