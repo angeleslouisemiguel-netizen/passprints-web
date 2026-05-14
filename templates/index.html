@@ -8,305 +8,124 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* ── LIGHT THEME (default) ── */
         :root {
-            --bg-1: #f4f6f8;
-            --bg-2: #eef2f6;
-            --panel: #ffffff;
-            --card-bg: #ffffff;
-            --text: #0b1320;
-            --text-dim: rgba(11,19,32,0.65);
-            --muted: rgba(11,19,32,0.45);
-            --accent: #5b4bff;
-            --accent-2: #00a8ff;
-            --magenta: #ff2da8;
-            --cyan: #00b0ff;
-            --yellow: #ffd24a;
-            --green: #34C759;
-            --red: #FF3B30;
-            --orange: #FF9500;
-            --border: rgba(11,19,32,0.07);
-            --border-strong: rgba(11,19,32,0.12);
-            --shadow: 0 8px 22px rgba(11,19,32,0.06);
-            --radius-sm: 8px;
-            --radius-md: 10px;
-            --radius-lg: 12px;
+            --bg-1: #f4f6f8; --bg-2: #eef2f6; --panel: #ffffff; --card-bg: #ffffff;
+            --text: #0b1320; --text-dim: rgba(11,19,32,0.65); --muted: rgba(11,19,32,0.45);
+            --accent: #5b4bff; --accent-2: #00a8ff; --magenta: #ff2da8; --cyan: #00b0ff;
+            --yellow: #ffd24a; --green: #34C759; --red: #FF3B30; --orange: #FF9500;
+            --border: rgba(11,19,32,0.07); --border-strong: rgba(11,19,32,0.12);
+            --shadow: 0 8px 22px rgba(11,19,32,0.06); --radius-sm: 8px; --radius-md: 10px; --radius-lg: 12px;
             --font: 'Inter', system-ui, -apple-system, sans-serif;
-            --text-secondary: rgba(11,19,32,0.55);
-            --bg: #ffffff;
-            --bg-secondary: #f4f6f8;
-            --sidebar-bg: rgba(11,19,32,0.02);
-            --input-bg: #fbfdff;
-            --input-bg-focus: #ffffff;
-            --row-hover: #f7f9fb;
-            --row-selected: rgba(91,75,255,0.06);
-            --unpaid-card: #fff;
-            --unpaid-card-hover: #fdf6f6;
-            --toggle-track: rgba(11,19,32,0.12);
-            --toggle-thumb: #fff;
+            --text-secondary: rgba(11,19,32,0.55); --bg: #ffffff; --bg-secondary: #f4f6f8;
+            --sidebar-bg: rgba(11,19,32,0.02); --input-bg: #fbfdff; --input-bg-focus: #ffffff;
+            --row-hover: #f7f9fb; --row-selected: rgba(91,75,255,0.06);
+            --unpaid-card: #fff; --unpaid-card-hover: #fdf6f6;
+            --toggle-track: rgba(11,19,32,0.12); --toggle-thumb: #fff;
         }
-
-        /* ── DARK THEME ── */
         [data-theme="dark"] {
-            --bg-1: #071026;
-            --bg-2: #071229;
-            --panel: #0f1b35;
-            --card-bg: #121e38;
-            --text: #e8edf5;
-            --text-dim: rgba(232,237,245,0.65);
-            --muted: rgba(232,237,245,0.45);
-            --border: rgba(255,255,255,0.06);
-            --border-strong: rgba(255,255,255,0.10);
-            --shadow: 0 8px 22px rgba(0,0,0,0.30);
-            --text-secondary: rgba(232,237,245,0.55);
-            --bg: #0f1b35;
-            --bg-secondary: #071026;
-            --sidebar-bg: rgba(0,0,0,0.15);
-            --input-bg: rgba(255,255,255,0.04);
-            --input-bg-focus: rgba(255,255,255,0.07);
-            --row-hover: rgba(255,255,255,0.03);
-            --row-selected: rgba(91,75,255,0.10);
-            --unpaid-card: #121e38;
-            --unpaid-card-hover: #1a2845;
-            --toggle-track: rgba(91,75,255,0.4);
-            --toggle-thumb: #5b4bff;
+            --bg-1: #071026; --bg-2: #071229; --panel: #0f1b35; --card-bg: #121e38;
+            --text: #e8edf5; --text-dim: rgba(232,237,245,0.65); --muted: rgba(232,237,245,0.45);
+            --border: rgba(255,255,255,0.06); --border-strong: rgba(255,255,255,0.10);
+            --shadow: 0 8px 22px rgba(0,0,0,0.30); --text-secondary: rgba(232,237,245,0.55);
+            --bg: #0f1b35; --bg-secondary: #071026; --sidebar-bg: rgba(0,0,0,0.15);
+            --input-bg: rgba(255,255,255,0.04); --input-bg-focus: rgba(255,255,255,0.07);
+            --row-hover: rgba(255,255,255,0.03); --row-selected: rgba(91,75,255,0.10);
+            --unpaid-card: #121e38; --unpaid-card-hover: #1a2845;
+            --toggle-track: rgba(91,75,255,0.4); --toggle-thumb: #5b4bff;
         }
 
-        body {
-            font-family: var(--font);
-            background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
-            color: var(--text);
-            min-height: 100vh;
-            line-height: 1.5;
-            overflow-x: hidden;
-            padding: 24px;
-            transition: background 0.3s ease, color 0.3s ease;
-        }
+        body { font-family: var(--font); background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%); color: var(--text); min-height: 100vh; line-height: 1.5; overflow-x: hidden; padding: 24px; transition: background 0.3s ease, color 0.3s ease; }
+        .shell { position: relative; z-index: 1; display: flex; min-height: calc(100vh - 48px); max-width: 1280px; margin: 0 auto; background: var(--panel); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; transition: background 0.3s ease; }
+        .shell::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none !important; background: linear-gradient(90deg,rgba(0,176,255,0.04),rgba(91,75,255,0.04),rgba(255,45,168,0.03)); background-size: 300% 300%; mix-blend-mode: screen; opacity: 0.8; animation: bgShift 12s linear infinite; }
 
-        .shell {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            min-height: calc(100vh - 48px);
-            max-width: 1280px;
-            margin: 0 auto;
-            background: var(--panel);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: background 0.3s ease;
-        }
-
-        .shell::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none !important;
-            background: linear-gradient(90deg,rgba(0,176,255,0.04),rgba(91,75,255,0.04),rgba(255,45,168,0.03));
-            background-size: 300% 300%;
-            mix-blend-mode: screen;
-            opacity: 0.8;
-            animation: bgShift 12s linear infinite;
-        }
-
-        /* ── SIDEBAR ── */
-        .sidebar {
-            width: 230px;
-            padding: 1.25rem 0.9rem;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--border);
-            overflow-y: auto;
-            position: relative;
-            z-index: 1;
-            flex-shrink: 0;
-            transition: background 0.3s ease;
-        }
-
+        .sidebar { width: 230px; padding: 1.25rem 0.9rem; display: flex; flex-direction: column; gap: 6px; background: var(--sidebar-bg); border-right: 1px solid var(--border); overflow-y: auto; position: relative; z-index: 1; flex-shrink: 0; transition: background 0.3s ease; }
         .sidebar-logo { padding: 8px 12px; margin-bottom: 0.5rem; }
         .logo-text { font-weight: 800; font-size: 20px; color: var(--text); letter-spacing: -0.02em; }
         .logo-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
-
         .cmyk-bars { display: flex; gap: 5px; margin-top: 5px; }
         .cmyk-bars .bar { display: block; height: 5px; border-radius: 4px; flex: 1; }
-        .cmyk-bars .bar-c { background: var(--cyan); }
-        .cmyk-bars .bar-m { background: var(--magenta); }
-        .cmyk-bars .bar-y { background: var(--yellow); }
-        .cmyk-bars .bar-k { background: #0b0b0b; }
-
-        .nav-section-label {
-            font-size: 10px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.08em; color: var(--muted); padding: 10px 14px 4px;
-        }
-
-        .nav-btn {
-            display: flex; align-items: center; gap: 10px; padding: 9px 14px;
-            border-radius: 8px; border: 1px solid transparent; background: transparent;
-            cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted);
-            width: 100%; text-align: left;
-            transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
-            position: relative;
-        }
+        .cmyk-bars .bar-c { background: var(--cyan); } .cmyk-bars .bar-m { background: var(--magenta); }
+        .cmyk-bars .bar-y { background: var(--yellow); } .cmyk-bars .bar-k { background: #0b0b0b; }
+        .nav-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 10px 14px 4px; }
+        .nav-btn { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 8px; border: 1px solid transparent; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); width: 100%; text-align: left; transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease; position: relative; }
         .nav-btn i { font-size: 17px; flex-shrink: 0; }
         .nav-btn:hover { color: var(--accent); background: rgba(91,75,255,0.06); border-color: rgba(91,75,255,0.15); }
         .nav-btn.active { color: var(--accent); background: rgba(91,75,255,0.08); border-color: rgba(91,75,255,0.25); }
-        .nav-btn.active::before {
-            content: ''; position: absolute; left: 0; top: 20%; height: 60%; width: 3px;
-            border-radius: 0 3px 3px 0; background: linear-gradient(180deg, var(--cyan), var(--magenta));
-        }
-
-        .theme-toggle-wrap {
-            margin-top: auto; padding: 12px 14px 4px;
-            display: flex; align-items: center; justify-content: space-between;
-            font-size: 12px; color: var(--muted);
-        }
+        .nav-btn.active::before { content: ''; position: absolute; left: 0; top: 20%; height: 60%; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, var(--cyan), var(--magenta)); }
+        .theme-toggle-wrap { margin-top: auto; padding: 12px 14px 4px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
         .theme-toggle { position: relative; width: 48px; height: 26px; }
         .theme-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-        .toggle-track {
-            position: absolute; inset: 0; border-radius: 13px;
-            background: var(--toggle-track); cursor: pointer; transition: background 0.3s;
-        }
-        .toggle-thumb {
-            position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
-            border-radius: 50%; background: var(--toggle-thumb); transition: transform 0.3s, background 0.3s;
-            display: flex; align-items: center; justify-content: center; font-size: 11px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
+        .toggle-track { position: absolute; inset: 0; border-radius: 13px; background: var(--toggle-track); cursor: pointer; transition: background 0.3s; }
+        .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--toggle-thumb); transition: transform 0.3s, background 0.3s; display: flex; align-items: center; justify-content: center; font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         [data-theme="dark"] .toggle-thumb { transform: translateX(22px); }
-
-        /* ── MAIN ── */
         .main { flex: 1; padding: 2rem; max-width: none; position: relative; z-index: 1; overflow-y: auto; }
-
         .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
         .page-title { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; flex: 1; }
-
-        .top-search {
-            padding: 9px 14px; border-radius: 20px; background: transparent;
-            border: 1px solid var(--border); color: var(--text); font-size: 13px;
-            font-family: var(--font); outline: none; min-width: 180px;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
+        .top-search { padding: 9px 14px; border-radius: 20px; background: transparent; border: 1px solid var(--border); color: var(--text); font-size: 13px; font-family: var(--font); outline: none; min-width: 180px; transition: border-color 0.15s, box-shadow 0.15s; }
         .top-search:focus { border-color: var(--accent); box-shadow: 0 4px 14px rgba(91,75,255,0.12); }
         .top-search::placeholder { color: var(--muted); }
-
-        .avatar {
-            width: 34px; height: 34px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--cyan), var(--magenta));
-            display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            animation: floatY 4s ease-in-out infinite; flex-shrink: 0; cursor: pointer;
-        }
-
-        /* ── ACCOUNT DROPDOWN ── */
-        .account-menu {
-            display: none; position: absolute; right: 0; top: 44px;
-            background: var(--panel); border: 1px solid var(--border);
-            border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.15);
-            min-width: 170px; z-index: 500; overflow: hidden;
-            animation: fadeUp 180ms cubic-bezier(.2,.9,.2,1) both;
-        }
+        .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--cyan), var(--magenta)); display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: floatY 4s ease-in-out infinite; flex-shrink: 0; cursor: pointer; }
+        .account-menu { display: none; position: absolute; right: 0; top: 44px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.15); min-width: 170px; z-index: 500; overflow: hidden; animation: fadeUp 180ms cubic-bezier(.2,.9,.2,1) both; }
         .account-menu.open { display: block; }
-        .account-menu a {
-            display: flex; align-items: center; gap: 10px; padding: 11px 16px;
-            font-size: 13px; font-weight: 600; color: var(--text); text-decoration: none;
-            transition: background 0.12s;
-        }
+        .account-menu a { display: flex; align-items: center; gap: 10px; padding: 11px 16px; font-size: 13px; font-weight: 600; color: var(--text); text-decoration: none; transition: background 0.12s; }
         .account-menu a:hover { background: var(--row-hover); }
         .account-menu a + a { border-top: 1px solid var(--border); }
-
-        .page { display: none; }
-        .page.active { display: block; }
-
-        /* ── METRIC GRID ── */
+        .page { display: none; } .page.active { display: block; }
         .metric-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
         @media (max-width: 860px) { .metric-grid { grid-template-columns: 1fr 1fr !important; } }
-
         .metric-card { background: var(--card-bg); border-radius: 12px; padding: 16px 18px; border: 1px solid var(--border); transition: background 0.3s; }
         .metric-card.big { display: flex; flex-direction: column; justify-content: center; }
         .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
         .metric-value { font-size: 20px; font-weight: 700; color: var(--text); }
-
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); margin-bottom: 8px; }
-
         .card { background: var(--card-bg); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: var(--shadow); transition: background 0.3s; }
-
         .project-row { border-radius: 8px; padding: 11px 14px; margin-bottom: 8px; cursor: pointer; background: var(--card-bg); border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s; }
         .project-row:hover { background: var(--row-hover); }
         .project-row.selected { background: var(--row-selected); border-color: rgba(91,75,255,0.3); }
         .row-head { display: flex; justify-content: space-between; align-items: center; }
         .row-meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
-
         .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
-        .badge.paid { background: #EAF3DE; color: #3B6D11; }
-        .badge.partial { background: #FAEEDA; color: #854F0B; }
-        .badge.unpaid { background: #FCEBEB; color: #A32D2D; }
-        .badge.pd { background: #EAF3DE; color: #3B6D11; }
-
+        .badge.paid { background: #EAF3DE; color: #3B6D11; } .badge.partial { background: #FAEEDA; color: #854F0B; }
+        .badge.unpaid { background: #FCEBEB; color: #A32D2D; } .badge.pd { background: #EAF3DE; color: #3B6D11; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
         .scard { background: var(--card-bg); border-radius: 12px; padding: 14px; border: 1px solid var(--border); transition: background 0.3s; }
-        .slabel { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
-        .sval { font-size: 20px; font-weight: 800; color: var(--text); }
-
+        .slabel { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 2px; } .sval { font-size: 20px; font-weight: 800; color: var(--text); }
         .search-bar { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 13px; font-family: var(--font); outline: none; margin-bottom: 12px; transition: border-color 0.15s, box-shadow 0.15s, background 0.3s; }
         .search-bar:focus { background: var(--input-bg-focus); border-color: var(--accent); box-shadow: 0 4px 14px rgba(91,75,255,0.10); }
         .search-bar::placeholder { color: var(--muted); }
-
         .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
         .filter-row select, .select-sm { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--input-bg); color: var(--text); font-size: 12px; font-family: var(--font); outline: none; cursor: pointer; }
         .filter-row select option, .select-sm option { background: var(--panel); color: var(--text); }
-
         .btn { padding: 9px 16px; border-radius: 8px; border: none; background: var(--accent); cursor: pointer; font-size: 13px; font-family: var(--font); font-weight: 600; color: #fff; transition: opacity 0.15s, box-shadow 0.15s, transform 0.15s; display: inline-flex; align-items: center; gap: 6px; }
         .btn:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(91,75,255,0.25); transform: translateY(-2px); }
         .btn:active { transform: translateY(0px); }
-        .btn.sm { padding: 6px 12px; font-size: 12px; }
-        .btn.danger { background: transparent; color: var(--red); border: 1px solid rgba(255,59,48,0.2); }
-        .btn.success { background: var(--green); }
-        .btn.orange { background: var(--orange); }
-        .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
-
+        .btn.sm { padding: 6px 12px; font-size: 12px; } .btn.danger { background: transparent; color: var(--red); border: 1px solid rgba(255,59,48,0.2); }
+        .btn.success { background: var(--green); } .btn.orange { background: var(--orange); } .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
         .ibtn { width: 100%; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; margin-top: 6px; font-family: var(--font); display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s, transform 0.15s, box-shadow 0.2s; }
         .ibtn:hover { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.22); }
         .ibtn:active { transform: translateY(0px); box-shadow: none; }
-        .ibtn-bl { background: var(--accent); color: #fff; }
-        .ibtn-gr { background: var(--green); color: #fff; }
-        .ibtn-or { background: var(--orange); color: #fff; }
-        .ibtn-re { background: var(--red); color: #fff; }
-
+        .ibtn-bl { background: var(--accent); color: #fff; } .ibtn-gr { background: var(--green); color: #fff; }
+        .ibtn-or { background: var(--orange); color: #fff; } .ibtn-re { background: var(--red); color: #fff; }
         .form-grid { display: grid; gap: 12px; }
-        .form-grid.cols2 { grid-template-columns: 1fr 1fr; }
-        .form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+        .form-grid.cols2 { grid-template-columns: 1fr 1fr; } .form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
         .form-group label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; font-weight: 600; }
         .form-group input, .form-group select, .form-group textarea, .finput { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); font-size: 13px; font-family: var(--font); outline: none; transition: border-color 0.12s, box-shadow 0.12s, background 0.3s; margin-bottom: 8px; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus, .finput:focus { background: var(--input-bg-focus); border-color: var(--accent); box-shadow: 0 4px 14px rgba(91,75,255,0.10); }
         .form-group textarea, .finput[rows] { resize: vertical; min-height: 70px; }
-
         .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
         .tbl th { background: var(--bg-secondary); color: var(--muted); padding: 8px 10px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
         .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
-        .tbl tr:last-child td { border-bottom: none; }
-        .tbl tr:hover td { background: var(--row-hover); }
-
+        .tbl tr:last-child td { border-bottom: none; } .tbl tr:hover td { background: var(--row-hover); }
         .clist { background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 14px; transition: background 0.3s; }
         .crow { display: flex; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--border); gap: 10px; cursor: pointer; transition: background 0.12s; }
-        .crow:last-child { border-bottom: none; }
-        .crow:hover { background: var(--row-hover); }
-
+        .crow:last-child { border-bottom: none; } .crow:hover { background: var(--row-hover); }
         .ico { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .ico i { font-size: 17px; color: #fff; }
-        .rmain { flex: 1; min-width: 0; }
-        .rt { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .rs { font-size: 12px; color: var(--muted); margin-top: 1px; }
-        .rr { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; flex-shrink: 0; }
-
+        .rmain { flex: 1; min-width: 0; } .rt { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rs { font-size: 12px; color: var(--muted); margin-top: 1px; } .rr { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; flex-shrink: 0; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: flex-end; z-index: 200; pointer-events: none; }
         .overlay.on { display: flex; pointer-events: auto; }
         .sheet { background: var(--panel); border-radius: 16px 16px 0 0; width: 100%; max-width: 640px; margin: 0 auto; max-height: 92vh; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.25); }
@@ -317,158 +136,144 @@
         .fsec { padding: 14px 18px 18px; }
         .flabel { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; font-weight: 600; }
         .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
         .detail-panel { background: var(--card-bg); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1rem; border: 1px solid var(--border); box-shadow: var(--shadow); }
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; font-size: 13px; margin-bottom: 1rem; }
-        .detail-label { color: var(--text-secondary); padding: 4px 0; }
-        .detail-value { color: var(--text); font-weight: 500; padding: 4px 0; }
-
+        .detail-label { color: var(--text-secondary); padding: 4px 0; } .detail-value { color: var(--text); font-weight: 500; padding: 4px 0; }
         .cost-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
         .cost-row:last-of-type { border-bottom: none; }
         .total-row { display: flex; justify-content: space-between; font-weight: 600; font-size: 14px; padding: 8px 0 0; border-top: 1px solid var(--border-strong); margin-top: 4px; }
-
         .tone-bar { display: flex; gap: 4px; margin-bottom: 10px; }
         .tone-btn { padding: 5px 14px; border-radius: var(--radius-md); font-size: 12px; cursor: pointer; border: 1px solid var(--border); color: var(--text-secondary); background: transparent; font-family: var(--font); transition: all 0.15s; }
         .tone-btn.active { border-color: var(--text); color: var(--text); background: var(--bg-secondary); }
-
         .unpaid-card { border: 1px solid rgba(255,59,48,0.2); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; background: var(--unpaid-card); }
         .unpaid-card:hover { background: var(--unpaid-card-hover); }
         .unpaid-card.selected { border-color: var(--red); }
-
-        /* ── SCROLLABLE 5-ROW LISTS ── */
-        .scroll-list {
-            max-height: calc(5 * 62px);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-strong) transparent;
-        }
+        .scroll-list { max-height: calc(5 * 62px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
         .scroll-list::-webkit-scrollbar { width: 4px; }
-        .scroll-list::-webkit-scrollbar-track { background: transparent; }
         .scroll-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
-
-        .scroll-table-wrap {
-            max-height: calc(5 * 46px + 42px);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-strong) transparent;
-        }
+        .scroll-table-wrap { max-height: calc(5 * 46px + 42px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
         .scroll-table-wrap::-webkit-scrollbar { width: 4px; }
-        .scroll-table-wrap::-webkit-scrollbar-track { background: transparent; }
         .scroll-table-wrap::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
-        .scroll-table-wrap .tbl thead th {
-            position: sticky; top: 0; z-index: 2;
-            background: var(--bg-secondary);
-        }
-        .scroll-dash {
-            max-height: calc(5 * 68px);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-strong) transparent;
-        }
+        .scroll-table-wrap .tbl thead th { position: sticky; top: 0; z-index: 2; background: var(--bg-secondary); }
+        .scroll-dash { max-height: calc(5 * 68px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
         .scroll-dash::-webkit-scrollbar { width: 4px; }
-        .scroll-dash::-webkit-scrollbar-track { background: transparent; }
         .scroll-dash::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
-        .scroll-history {
-            max-height: calc(5 * 70px);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-strong) transparent;
-        }
+        .scroll-history { max-height: calc(5 * 70px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
         .scroll-history::-webkit-scrollbar { width: 4px; }
-        .scroll-history::-webkit-scrollbar-track { background: transparent; }
         .scroll-history::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
-
         .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 9999; }
         .toast.show { opacity: 1; }
-
         .divider { height: 1px; background: var(--border); margin: 1rem 0; }
         .empty { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); font-size: 13px; }
-
-        /* ── TODAY BOX ── */
-        .today-box {
-            display: flex; align-items: center; gap: 8px;
-            padding: 7px 14px; border-radius: 20px;
-            border: 1px solid var(--border);
-            background: var(--card-bg);
-            font-size: 13px; font-weight: 600; color: var(--text);
-            white-space: nowrap; flex-shrink: 0;
-            transition: background 0.3s, border-color 0.3s;
-        }
+        .today-box { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-bg); font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; flex-shrink: 0; transition: background 0.3s, border-color 0.3s; }
         .today-box i { font-size: 15px; color: var(--accent); }
 
-        /* ── TXN TABLE STYLES (new) ── */
+        /* ── TXN SECTION HEADERS — VERTICAL STACKED LAYOUT ── */
+        .txn-section {
+            margin-bottom: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
         .txn-section-hdr {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 9px 12px 8px;
-            border-radius: 8px 8px 0 0;
+            padding: 10px 14px;
             font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
         }
-        .txn-section-hdr.paid-hdr {
+        .txn-section.paid-section .txn-section-hdr {
             background: rgba(52,199,89,0.08);
             color: #2a9a45;
-            border: 1px solid rgba(52,199,89,0.2);
-            border-bottom: none;
+            border-bottom: 1px solid rgba(52,199,89,0.15);
         }
-        .txn-section-hdr.unpaid-hdr {
+        .txn-section.unpaid-section .txn-section-hdr {
             background: rgba(255,59,48,0.07);
             color: #b52b22;
-            border: 1px solid rgba(255,59,48,0.2);
-            border-bottom: none;
-            margin-top: 14px;
+            border-bottom: 1px solid rgba(255,59,48,0.15);
         }
-        [data-theme="dark"] .txn-section-hdr.paid-hdr { color: #34C759; }
-        [data-theme="dark"] .txn-section-hdr.unpaid-hdr { color: #ff6b63; }
-
-        .txn-table-wrap {
-            border: 1px solid var(--border);
-            border-radius: 0 0 8px 8px;
-            overflow: hidden;
-            margin-bottom: 2px;
-        }
-        .txn-table-wrap.paid-wrap { border-color: rgba(52,199,89,0.2); }
-        .txn-table-wrap.unpaid-wrap { border-color: rgba(255,59,48,0.2); }
+        [data-theme="dark"] .txn-section.paid-section .txn-section-hdr { color: #34C759; }
+        [data-theme="dark"] .txn-section.unpaid-section .txn-section-hdr { color: #ff6b63; }
 
         .txn-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .txn-tbl th {
-            padding: 7px 10px; text-align: left;
-            font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
-            color: var(--muted); background: var(--bg-secondary);
-            position: sticky; top: 0; z-index: 2;
-        }
+        .txn-tbl th { padding: 7px 10px; text-align: left; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--bg-secondary); }
         .txn-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
-        .txn-tbl tr:last-child td { border-bottom: none; }
-        .txn-tbl tr:hover td { background: var(--row-hover); }
-        .txn-tbl tr.txn-selected td { background: rgba(91,75,255,0.07); }
-
-        /* checkbox cell */
+        .txn-tbl tr:last-child td { border-bottom: none; } .txn-tbl tr:hover td { background: var(--row-hover); }
         .txn-cb { width: 32px; padding: 9px 4px 9px 10px !important; }
-        .txn-checkbox {
-            width: 16px; height: 16px; cursor: pointer;
-            accent-color: var(--accent);
-        }
+        .txn-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
 
         /* ── BULK ACTION BAR ── */
-        .bulk-bar {
-            display: none; align-items: center; gap: 8px;
-            padding: 8px 12px; border-radius: 8px;
-            background: rgba(91,75,255,0.08);
-            border: 1px solid rgba(91,75,255,0.25);
-            margin-bottom: 10px; flex-wrap: wrap;
-            animation: fadeUp 200ms cubic-bezier(.2,.9,.2,1) both;
-        }
+        .bulk-bar { display: none; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: rgba(91,75,255,0.08); border: 1px solid rgba(91,75,255,0.25); margin-bottom: 10px; flex-wrap: wrap; animation: fadeUp 200ms cubic-bezier(.2,.9,.2,1) both; }
         .bulk-bar.visible { display: flex; }
-        .bulk-bar .bulk-label {
-            font-size: 12px; font-weight: 700; color: var(--accent); flex: 1;
-        }
-        .bulk-btn {
-            padding: 6px 12px; border-radius: 7px; border: none; cursor: pointer;
-            font-size: 12px; font-weight: 700; font-family: var(--font);
-            display: inline-flex; align-items: center; gap: 5px; transition: opacity .15s, transform .15s;
-        }
+        .bulk-bar .bulk-label { font-size: 12px; font-weight: 700; color: var(--accent); flex: 1; }
+        .bulk-btn { padding: 6px 12px; border-radius: 7px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; font-family: var(--font); display: inline-flex; align-items: center; gap: 5px; transition: opacity .15s, transform .15s; }
         .bulk-btn:hover { opacity: .85; transform: translateY(-1px); }
         .bulk-btn.bb-receipt { background: var(--accent); color: #fff; }
         .bulk-btn.bb-delete  { background: rgba(255,59,48,0.1); color: var(--red); border: 1px solid rgba(255,59,48,0.25); }
         .bulk-btn.bb-clear   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+        /* ══════════════════════════════════════════════════
+           PROFESSIONAL RECEIPT STYLES
+        ══════════════════════════════════════════════════ */
+        .receipt-wrap {
+            background: #fff;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #111;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+        }
+        /* Jagged top/bottom edge — receipt paper look */
+        .receipt-wrap::before, .receipt-wrap::after {
+            content: '';
+            display: block;
+            height: 10px;
+            background: radial-gradient(circle at 5px 0, transparent 5px, #fff 5px) -5px 0 / 10px 10px repeat-x;
+        }
+        .receipt-wrap::before { background: radial-gradient(circle at 5px 10px, transparent 5px, #fff 5px) -5px 0 / 10px 10px repeat-x; border-top: 1px dashed #ddd; }
+        .receipt-wrap::after { background: radial-gradient(circle at 5px 0, transparent 5px, #fff 5px) -5px 0 / 10px 10px repeat-x; border-bottom: 1px dashed #ddd; }
+        .receipt-inner { padding: 16px 22px 20px; }
+        .receipt-header { text-align: center; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed #ccc; }
+        .receipt-logo { font-size: 22px; font-weight: 900; letter-spacing: -0.03em; color: #111; font-family: 'Inter', sans-serif; }
+        .receipt-tagline { font-size: 10px; color: #666; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'Courier New', monospace; }
+        .receipt-cmyk { display: flex; gap: 3px; justify-content: center; margin: 8px 0 4px; }
+        .receipt-cmyk span { display: block; width: 22px; height: 4px; border-radius: 2px; }
+        .receipt-meta { font-size: 11px; color: #444; line-height: 2; }
+        .receipt-meta-row { display: flex; justify-content: space-between; }
+        .receipt-meta-row span:first-child { color: #888; }
+        .receipt-divider { border: none; border-top: 1px dashed #ccc; margin: 10px 0; }
+        .receipt-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin: 8px 0 4px; font-family: 'Courier New', monospace; }
+        .receipt-item { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; line-height: 1.8; }
+        .receipt-item-desc { color: #333; flex: 1; }
+        .receipt-item-amt { font-weight: 700; color: #111; white-space: nowrap; margin-left: 8px; }
+        .receipt-subtotal-row { display: flex; justify-content: space-between; font-size: 11px; color: #666; padding: 2px 0; }
+        .receipt-total { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 2px solid #111; }
+        .receipt-total-label { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; font-family: 'Inter', sans-serif; }
+        .receipt-total-amt { font-size: 20px; font-weight: 900; color: #111; font-family: 'Inter', sans-serif; }
+        .receipt-payment-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #ccc; }
+        .receipt-payment-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 6px; }
+        .receipt-payment-item { display: flex; align-items: center; gap: 8px; font-size: 11px; margin-bottom: 4px; color: #444; }
+        .receipt-payment-badge { font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 3px; color: #fff; font-family: 'Inter', sans-serif; white-space: nowrap; }
+        .receipt-footer { text-align: center; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #ccc; }
+        .receipt-footer-text { font-size: 11px; color: #777; line-height: 1.8; }
+        .receipt-barcode { margin: 10px auto 4px; display: flex; justify-content: center; gap: 1px; height: 32px; align-items: flex-end; }
+        .receipt-barcode span { background: #222; border-radius: 0; display: inline-block; }
+        .receipt-ref { font-size: 10px; color: #aaa; letter-spacing: 0.2em; margin-top: 4px; }
+        .receipt-stamp {
+            display: inline-block; border: 2.5px solid #34C759; color: #34C759; font-size: 11px;
+            font-weight: 900; padding: 3px 12px; border-radius: 3px; text-transform: uppercase;
+            letter-spacing: 0.15em; transform: rotate(-5deg); margin-top: 6px;
+            font-family: 'Inter', sans-serif;
+        }
+        .receipt-stamp.unpaid-stamp { border-color: #FF3B30; color: #FF3B30; }
+
+        /* Print receipt cleanly */
+        @media print {
+            body > *:not(.overlay) { display: none !important; }
+            .overlay { display: block !important; position: static !important; background: none !important; }
+            .sheet { box-shadow: none !important; max-height: none !important; border-radius: 0 !important; }
+            .mhdr, .ibtn, .receipt-payment-section .ibtn, #rcpt-actions { display: none !important; }
+            .receipt-wrap { box-shadow: none !important; }
+        }
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -480,22 +285,16 @@
         .btn:active, .ibtn:active { animation: btnPop 0.28s cubic-bezier(.36,.07,.19,.97) both; }
         .ripple-effect { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple 0.5s linear; background: rgba(255,255,255,0.3); pointer-events: none; width: 60px; height: 60px; margin-top: -30px; margin-left: -30px; }
 
-
-
         @media (max-width: 860px) {
             body { padding: 0; }
             .shell { flex-direction: column; border-radius: 0; min-height: 100vh; }
             .sidebar { width: 100%; flex-direction: row; padding: 10px 12px; gap: 4px; overflow-x: auto; }
             .sidebar-logo { margin-right: auto; flex-shrink: 0; }
-            .nav-section-label { display: none; }
-            .nav-btn span { display: none; }
-            .nav-btn { padding: 8px 10px; justify-content: center; }
-            .nav-btn.active::before { display: none; }
+            .nav-section-label { display: none; } .nav-btn span { display: none; }
+            .nav-btn { padding: 8px 10px; justify-content: center; } .nav-btn.active::before { display: none; }
             .theme-toggle-wrap { margin: 0; padding: 0; }
-            .metric-grid { grid-template-columns: 1fr 1fr; }
-            .dash-grid { grid-template-columns: 1fr; }
-            .today-box span { display: none; }
-            .today-box { padding: 7px 10px; }
+            .metric-grid { grid-template-columns: 1fr 1fr; } .dash-grid { grid-template-columns: 1fr; }
+            .today-box span { display: none; } .today-box { padding: 7px 10px; }
         }
         @media (max-width: 540px) {
             .form-grid.cols2, .form-grid.cols3 { grid-template-columns: 1fr; }
@@ -504,7 +303,6 @@
     </style>
 </head>
 <body>
-
 <div class="shell" id="APP">
 
     <!-- ── SIDEBAR ── -->
@@ -526,13 +324,11 @@
                 <span class="bar bar-y"></span><span class="bar bar-k"></span>
             </div>
         </div>
-
         <div class="nav-section-label">Main</div>
         <button class="nav-btn active" onclick="showPage('dash',this)"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></button>
         <button class="nav-btn" onclick="showPage('clients',this)"><i class="ti ti-users"></i><span>Customers</span></button>
         <button class="nav-btn" onclick="showPage('orders',this)"><i class="ti ti-list-details"></i><span>Orders</span></button>
         <button class="nav-btn" onclick="showPage('quotes',this)"><i class="ti ti-receipt"></i><span>Receipts</span></button>
-
         <div class="nav-section-label">Tools</div>
         <button class="nav-btn" onclick="openAdd()"><i class="ti ti-plus"></i><span>New Order</span></button>
         <button class="nav-btn" id="nav-history" onclick="showPage('history',this)">
@@ -557,19 +353,11 @@
                     <option value="all">All months</option>
                 </select>
                 <div style="position:relative;">
-                    <div id="avatarBtn" onclick="toggleAccountMenu()" title="{{ user.name }}"
-                        style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.2);flex-shrink:0;overflow:hidden;border:2px solid var(--accent);">
-                        {% if user.picture %}<img src="{{ user.picture }}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">{% else %}{{ user.name[0]|upper }}{% endif %}
-                    </div>
+                    <div id="avatarBtn" onclick="toggleAccountMenu()" title="Account"
+                        style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.2);flex-shrink:0;overflow:hidden;border:2px solid var(--accent);">P</div>
                     <div class="account-menu" id="accountMenu">
-                        <div style="padding:12px 16px 10px;border-bottom:1px solid var(--border);">
-                            <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">{{ user.name }}</div>
-                            <div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">{{ user.email }}</div>
-                        </div>
-                        {% if admin %}
-                        <a href="/admin"><i class="ti ti-settings" style="font-size:16px;color:var(--accent);"></i> Admin Panel</a>
-                        {% endif %}
-                        <a href="/logout"><i class="ti ti-logout" style="font-size:16px;color:var(--red);"></i> Sign Out</a>
+                        <a href="#"><i class="ti ti-settings" style="font-size:16px;color:var(--accent);"></i> Settings</a>
+                        <a href="#"><i class="ti ti-logout" style="font-size:16px;color:var(--red);"></i> Sign Out</a>
                     </div>
                 </div>
             </div>
@@ -584,7 +372,6 @@
                     <div id="dash-unpaid"></div>
                 </div>
             </div>
-            <!-- BANK DETAILS -->
             <div style="margin-top:1.25rem;">
                 <p class="section-label">Payment Details</p>
                 <div style="background:var(--card-bg);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;">
@@ -642,10 +429,10 @@
             </div>
             <div class="card" style="padding:0;overflow:hidden;">
                 <div class="scroll-table-wrap">
-                <table class="tbl">
-                    <thead><tr><th>Date</th><th>Customer</th><th>Meters</th><th>Rate</th><th>Total</th><th>Status</th></tr></thead>
-                    <tbody id="ordersBody"></tbody>
-                </table>
+                    <table class="tbl">
+                        <thead><tr><th>Date</th><th>Customer</th><th>Meters</th><th>Rate</th><th>Total</th><th>Status</th></tr></thead>
+                        <tbody id="ordersBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -683,20 +470,7 @@
                     </div>
                 </div>
                 <div>
-                    <div class="card" id="receiptCard" style="display:none;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                            <div><div style="font-weight:800;font-size:15px;color:var(--text)">passprints.</div><div style="font-size:10px;color:var(--muted)">DTF Film Service</div></div>
-                            <div style="display:flex;gap:4px;"><span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--cyan)"></span><span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--magenta)"></span><span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--yellow)"></span><span style="display:block;width:18px;height:4px;border-radius:3px;background:#0b0b0b"></span></div>
-                        </div>
-                        <div class="divider"></div>
-                        <div id="receiptContent"></div>
-                        <div class="divider"></div>
-                        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;text-align:center;">BPI: 9929260433 · BDO: 005520304611 · GCash available</div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                            <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
-                            <button class="ibtn" style="font-size:13px;padding:9px;background:#0866FF;color:#fff;" onclick="shareR()"><i class="ti ti-brand-meta"></i> Send via Meta</button>
-                        </div>
-                    </div>
+                    <div id="receiptCard" style="display:none;"></div>
                     <div id="receiptEmpty" class="empty" style="padding:4rem 1rem;"><div style="font-size:2rem;margin-bottom:8px;">🧾</div><div>Fill in the form to generate a receipt</div></div>
                 </div>
             </div>
@@ -724,10 +498,7 @@
 <div class="overlay" id="OVL" onclick="if(event.target===this)closeModal()">
     <div class="sheet" id="SHT"></div>
 </div>
-
 <div class="toast" id="toast"></div>
-
-
 
 <script>
     /* ── THEME ── */
@@ -762,21 +533,17 @@
         try { const s = localStorage.getItem(HISTORY_KEY); if (s) actionHistory = JSON.parse(s); } catch (e) { actionHistory = []; }
         renderHistoryPage();
     }
-
     function saveHistory() {
         if (actionHistory.length > 200) actionHistory = actionHistory.slice(0, 200);
         localStorage.setItem(HISTORY_KEY, JSON.stringify(actionHistory));
     }
-
     function recordAction(type, description, detail, undoSnapshot) {
         const entry = { id: Date.now() + Math.random(), type, description, detail, timestamp: new Date().toISOString(), undoable: !!undoSnapshot };
         actionHistory.unshift(entry);
         if (undoSnapshot) { undoStack.unshift({ entryId: entry.id, snapshot: undoSnapshot }); if (undoStack.length > 20) undoStack.pop(); }
-        unseenCount++;
-        saveHistory(); updateHistoryBadge();
+        unseenCount++; saveHistory(); updateHistoryBadge();
         if (document.getElementById('page-history').classList.contains('active')) renderHistoryPage();
     }
-
     function updateHistoryBadge() {
         const badge = document.getElementById('history-badge');
         if (!badge) return;
@@ -785,13 +552,8 @@
         const undoBtn = document.getElementById('undoBtn');
         if (undoBtn) undoBtn.style.display = undoStack.length > 0 ? 'flex' : 'none';
     }
-
     function clearHistoryBadge() { unseenCount = 0; const b = document.getElementById('history-badge'); if (b) b.style.display = 'none'; }
-
-    function snapshotState() {
-        return { dtfData: JSON.parse(JSON.stringify(dtfData)), savedCustomers: JSON.parse(JSON.stringify(savedCustomers)) };
-    }
-
+    function snapshotState() { return { dtfData: JSON.parse(JSON.stringify(dtfData)), savedCustomers: JSON.parse(JSON.stringify(savedCustomers)) }; }
     function undoLastAction() {
         if (!undoStack.length) { toast('Nothing to undo'); return; }
         const { snapshot } = undoStack.shift();
@@ -800,10 +562,8 @@
         rebuildClientMap(); saveAppState(); populateMonthSelectors();
         renderDash(); buildClientList(); renderOrders();
         if (actionHistory.length) actionHistory[0].undone = true;
-        saveHistory(); updateHistoryBadge(); renderHistoryPage();
-        toast('↩️ Action undone');
+        saveHistory(); updateHistoryBadge(); renderHistoryPage(); toast('↩️ Action undone');
     }
-
     function clearHistory() { actionHistory = []; undoStack = []; localStorage.removeItem(HISTORY_KEY); updateHistoryBadge(); renderHistoryPage(); toast('History cleared'); }
 
     const HISTORY_ICONS = {
@@ -854,8 +614,7 @@
         Object.keys(clientMap).forEach(key => delete clientMap[key]);
         dtfData.forEach(r => {
             if (!clientMap[r.name]) clientMap[r.name] = { name: r.name, total: 0, orders: 0, unpaid: 0, lastDate: r.date, color: COLORS[Object.keys(clientMap).length % COLORS.length] };
-            clientMap[r.name].total += r.total;
-            clientMap[r.name].orders++;
+            clientMap[r.name].total += r.total; clientMap[r.name].orders++;
             if (r.status !== 'pd') clientMap[r.name].unpaid += r.total;
             if (r.date > clientMap[r.name].lastDate) clientMap[r.name].lastDate = r.date;
         });
@@ -878,18 +637,12 @@
                         total: Number(row.total) || ((Number(row.qty) || 0) * (Number(row.rate) || 0)),
                         status: String(row.status || '')
                     })));
-                    if (Array.isArray(data.customers)) {
-                        savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({
-                            name: String(c.name || ''), phone: String(c.phone || ''), notes: String(c.notes || '')
-                        })));
-                    }
+                    if (Array.isArray(data.customers)) savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({ name: String(c.name || ''), phone: String(c.phone || ''), notes: String(c.notes || '') })));
                     try { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ orders: dtfData, customers: savedCustomers })); } catch(e) {}
-                    rebuildClientMap();
-                    return;
+                    rebuildClientMap(); return;
                 }
             }
-        } catch (err) { console.warn('Server load failed, trying localStorage:', err); }
-
+        } catch (err) { console.warn('Server load failed:', err); }
         try {
             const raw = localStorage.getItem(APP_DATA_KEY);
             if (raw) {
@@ -901,17 +654,11 @@
                         total: Number(row.total) || ((Number(row.qty) || 0) * (Number(row.rate) || 0)),
                         status: String(row.status || '')
                     })));
-                    if (Array.isArray(data.customers)) {
-                        savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({
-                            name: String(c.name || ''), phone: String(c.phone || ''), notes: String(c.notes || '')
-                        })));
-                    }
-                    rebuildClientMap();
-                    return;
+                    if (Array.isArray(data.customers)) savedCustomers.splice(0, savedCustomers.length, ...data.customers.map(c => ({ name: String(c.name || ''), phone: String(c.phone || ''), notes: String(c.notes || '') })));
+                    rebuildClientMap(); return;
                 }
             }
         } catch (e) { console.warn('localStorage load failed:', e); }
-
         rebuildClientMap();
     }
 
@@ -921,21 +668,14 @@
         try { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ orders: dtfData, customers: savedCustomers })); } catch(e) {}
         autoSaveTimer = setTimeout(_pushDataToServer, 600);
     }
-
     async function _pushDataToServer() {
         try { await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orders: dtfData, customers: savedCustomers }) }); }
         catch (err) { console.error('Auto-save failed:', err); }
     }
 
     function fmt(n) { return '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-    /* Smart meter format: show decimals only when needed (1.5 → "1.5", 2.0 → "2") */
     function fmtM(n) { const v = parseFloat(n || 0); return v % 1 === 0 ? v.toString() : v.toString(); }
-
-    function toast(msg) {
-        const el = document.getElementById('toast');
-        el.textContent = msg; el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 2500);
-    }
+    function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
 
     /* ── NAVIGATION ── */
     function showPage(name, btn) {
@@ -951,7 +691,6 @@
 
     /* ── DASHBOARD ── */
     function getMonthKey(d) { return d ? d.slice(0, 7) : ''; }
-
     function populateMonthSelectors() {
         const months = [...new Set(dtfData.map(r => getMonthKey(r.date)))].sort().reverse();
         ['monthSel', 'ord-month'].forEach(id => {
@@ -962,15 +701,12 @@
                 const d = new Date(m + '-01');
                 const label = d.toLocaleString('default', { year: 'numeric', month: 'long' });
                 const opt = document.createElement('option');
-                opt.value = m; opt.textContent = label;
-                el.appendChild(opt);
+                opt.value = m; opt.textContent = label; el.appendChild(opt);
             });
         });
     }
-
     let dashFilter = '';
     function filterDash(v) { dashFilter = v; renderDashLists(); }
-
     function renderDash() {
         const month = document.getElementById('monthSel').value;
         const source = month === 'all' ? dtfData : dtfData.filter(r => getMonthKey(r.date) === month);
@@ -1001,7 +737,6 @@
         <div class="metric-card animate-card"><div class="metric-label">📊 Collection Rate</div><div class="metric-value" style="color:${collectionRate >= 80 ? 'var(--green)' : collectionRate >= 50 ? 'var(--orange)' : 'var(--red)'};font-size:28px;font-weight:900;">${collectionRate}%</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">${100 - collectionRate}% still pending</div></div>`;
         renderDashLists();
     }
-
     function renderDashLists() {
         const month = document.getElementById('monthSel').value;
         let source = month === 'all' ? dtfData : dtfData.filter(r => getMonthKey(r.date) === month);
@@ -1039,7 +774,6 @@
         const dl = document.getElementById('cnames');
         if (dl) dl.innerHTML = clients.map(c => `<option value="${c.name}">`).join('');
     }
-
     function filterClients(v) { buildClientList(v); }
 
     function confirmDeleteClient(name) {
@@ -1054,7 +788,6 @@
           </div>
         </div>`);
     }
-
     function deleteClient(name) {
         const snapshot = snapshotState();
         const clientInfo = clientMap[name];
@@ -1069,11 +802,10 @@
         closeModal(); toast(`"${name}" deleted`);
         rebuildClientMap(); buildClientList(); renderDash(); renderOrders();
     }
-
     function openClientById(name) { const c = clientMap[name]; if (c) openClient(c); }
 
     /* ══════════════════════════════════════════════════════
-       OPEN CLIENT — SPLIT PAID / UNPAID + MULTI-SELECT
+       OPEN CLIENT — VERTICAL PAID / UNPAID SECTIONS
     ══════════════════════════════════════════════════════ */
     function openClient(cOrName) {
         const name = (typeof cOrName === 'string') ? cOrName : cOrName.name;
@@ -1081,32 +813,33 @@
         if (!c) return;
 
         const txns = dtfData.filter(r => r.name === c.name);
-        const paidTxns   = txns.map((r, gi) => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status === 'pd');
-        const unpaidTxns = txns.map((r, gi) => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status !== 'pd');
+        const paidTxns   = txns.map(r => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status === 'pd');
+        const unpaidTxns = txns.map(r => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status !== 'pd');
 
         const paidTotal   = paidTxns.reduce((s, r) => s + r.total, 0);
         const unpaidTotal = unpaidTxns.reduce((s, r) => s + r.total, 0);
         const safeName = c.name.replace(/'/g, "\\'");
 
         function buildTxnTable(list, type) {
-            if (!list.length) return `<div style="padding:12px 14px;font-size:12px;color:var(--muted);font-style:italic;">No ${type} orders</div>`;
+            if (!list.length) {
+                return `<div style="padding:14px;font-size:12px;color:var(--muted);font-style:italic;text-align:center;background:var(--bg-secondary);">
+                    ${type === 'paid' ? 'No paid orders yet' : '🎉 No unpaid orders — all settled!'}
+                </div>`;
+            }
             const allCb = `cb-all-${type}`;
-            return `
-            <table class="txn-tbl" id="tbl-${type}">
-              <thead>
-                <tr>
-                  <th class="txn-cb"><input type="checkbox" class="txn-checkbox" id="${allCb}" onchange="toggleSelectAll('${type}','${safeName}')" title="Select all"></th>
-                  <th>Date</th><th>Meters</th><th>Rate</th><th>Total</th>
-                  <th style="text-align:right;padding-right:10px;">Action</th>
-                </tr>
-              </thead>
+            return `<table class="txn-tbl" id="tbl-${type}">
+              <thead><tr>
+                <th class="txn-cb"><input type="checkbox" class="txn-checkbox" id="${allCb}" onchange="toggleSelectAll('${type}','${safeName}')" title="Select all"></th>
+                <th>Date</th><th>Meters</th><th>Rate</th><th>Total</th>
+                <th style="text-align:right;padding-right:10px;">Action</th>
+              </tr></thead>
               <tbody>
                 ${list.map(r => `
                 <tr class="txn-row" data-gi="${r._gi}" data-type="${type}">
                   <td class="txn-cb"><input type="checkbox" class="txn-checkbox txn-row-cb" data-gi="${r._gi}" data-type="${type}" onchange="onRowCheck('${safeName}')"></td>
-                  <td>${r.date}</td>
-                  <td style="font-weight:600;">${fmtM(r.qty)}m</td>
-                  <td>₱${r.rate}/m</td>
+                  <td style="font-size:11px;color:var(--muted);">${r.date}</td>
+                  <td style="font-weight:700;">${fmtM(r.qty)}m</td>
+                  <td style="color:var(--muted);">₱${r.rate}/m</td>
                   <td style="font-weight:700;">${fmt(r.total)}</td>
                   <td style="text-align:right;padding-right:8px;">
                     <div style="display:flex;gap:5px;justify-content:flex-end;align-items:center;">
@@ -1136,7 +869,7 @@
           <!-- STATS -->
           <div class="stats-grid" style="margin-bottom:14px;">
             <div class="scard"><div class="slabel">Total Spent</div><div class="sval" style="font-size:16px;">${fmt(c.total)}</div></div>
-            <div class="scard"><div class="slabel">Orders</div><div class="sval" style="font-size:16px;">${txns.length}</div></div>
+            <div class="scard"><div class="slabel">Total Orders</div><div class="sval" style="font-size:16px;">${txns.length}</div></div>
           </div>
 
           <!-- BULK ACTION BAR -->
@@ -1147,22 +880,30 @@
             <button class="bulk-btn bb-clear" onclick="clearAllChecks('${safeName}')"><i class="ti ti-x" style="font-size:12px;"></i> Clear</button>
           </div>
 
-          <!-- PAID TABLE -->
-          <div class="txn-section-hdr paid-hdr">
-            <span>✅ Paid Orders</span>
-            <span style="font-weight:800;">${fmt(paidTotal)}</span>
-          </div>
-          <div class="txn-table-wrap paid-wrap">
-            ${buildTxnTable(paidTxns, 'paid')}
+          <!-- ── UNPAID SECTION (shown first — attention!) ── -->
+          <div class="txn-section unpaid-section">
+            <div class="txn-section-hdr">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block;"></span>
+                <span>Unpaid Orders</span>
+                <span style="font-size:10px;opacity:0.7;">(${unpaidTxns.length})</span>
+              </div>
+              <span style="font-weight:900;">${fmt(unpaidTotal)}</span>
+            </div>
+            ${buildTxnTable(unpaidTxns, 'unpaid')}
           </div>
 
-          <!-- UNPAID TABLE -->
-          <div class="txn-section-hdr unpaid-hdr">
-            <span>❗ Unpaid Orders</span>
-            <span style="font-weight:800;">${fmt(unpaidTotal)}</span>
-          </div>
-          <div class="txn-table-wrap unpaid-wrap">
-            ${buildTxnTable(unpaidTxns, 'unpaid')}
+          <!-- ── PAID SECTION ── -->
+          <div class="txn-section paid-section">
+            <div class="txn-section-hdr">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block;"></span>
+                <span>Paid Orders</span>
+                <span style="font-size:10px;opacity:0.7;">(${paidTxns.length})</span>
+              </div>
+              <span style="font-weight:900;">${fmt(paidTotal)}</span>
+            </div>
+            ${buildTxnTable(paidTxns, 'paid')}
           </div>
 
           <!-- FOOTER ACTIONS -->
@@ -1175,7 +916,7 @@
         openModal(html);
     }
 
-    /* ── helper: toggle a single txn by its global dtfData index ── */
+    /* ── toggle a single txn by global index ── */
     function toggleTxnByGi(clientName, gi) {
         const txn = dtfData[gi];
         if (!txn) return;
@@ -1184,10 +925,7 @@
         const snapshot = snapshotState();
         txn.status = newStatus;
         const c = clientMap[clientName];
-        if (c) {
-            if (wasPaid) c.unpaid += txn.total;
-            else c.unpaid = Math.max(0, c.unpaid - txn.total);
-        }
+        if (c) { if (wasPaid) c.unpaid += txn.total; else c.unpaid = Math.max(0, c.unpaid - txn.total); }
         toast(newStatus === 'pd' ? '✅ Marked as Paid!' : '🔴 Marked as Unpaid');
         saveAppState();
         recordAction('payment_change', `Payment updated — ${clientName}`, `${txn.qty}m · ${fmt(txn.total)} · ${wasPaid ? 'Paid' : 'Unpaid'} → ${newStatus === 'pd' ? 'Paid' : 'Unpaid'} · ${txn.date}`, snapshot);
@@ -1195,7 +933,6 @@
         openClient(clientName);
     }
 
-    /* ── helper: delete order by global index ── */
     function confirmDeleteOrderByGi(clientName, gi) {
         const txn = dtfData[gi];
         if (!txn) return;
@@ -1214,44 +951,32 @@
           </div>
         </div>`);
     }
-
     function deleteOrderByGi(clientName, gi) {
         const snapshot = snapshotState();
         const txn = dtfData[gi];
         if (!txn) return;
         dtfData.splice(gi, 1);
-        rebuildClientMap();
-        saveAppState();
+        rebuildClientMap(); saveAppState();
         recordAction('add_order', `Order deleted — ${clientName}`, `${txn.qty}m · ${fmt(txn.total)} · ${txn.date}`, snapshot);
         renderDash(); buildClientList(); renderOrders();
         const remaining = dtfData.filter(r => r.name === clientName);
         const inSaved = savedCustomers.find(c => c.name === clientName);
-        if (remaining.length === 0 && !inSaved) {
-            closeModal(); toast(`🗑️ Order deleted · ${clientName} removed`);
-        } else {
-            toast('🗑️ Order deleted');
-            openClient(clientName);
-        }
+        if (remaining.length === 0 && !inSaved) { closeModal(); toast(`🗑️ Order deleted · ${clientName} removed`); }
+        else { toast('🗑️ Order deleted'); openClient(clientName); }
     }
 
-    /* ── MULTI-SELECT HELPERS ── */
-    function getCheckedGis() {
-        return [...document.querySelectorAll('.txn-row-cb:checked')].map(cb => parseInt(cb.dataset.gi));
-    }
-
+    /* ── MULTI-SELECT ── */
+    function getCheckedGis() { return [...document.querySelectorAll('.txn-row-cb:checked')].map(cb => parseInt(cb.dataset.gi)); }
     function onRowCheck(clientName) {
         const gis = getCheckedGis();
-        const bar  = document.getElementById('bulk-bar');
-        const lbl  = document.getElementById('bulk-label');
+        const bar = document.getElementById('bulk-bar');
+        const lbl = document.getElementById('bulk-label');
         if (!bar || !lbl) return;
         if (gis.length > 0) {
             bar.classList.add('visible');
             const selTotal = gis.reduce((s, gi) => s + (dtfData[gi] ? dtfData[gi].total : 0), 0);
             lbl.textContent = `${gis.length} selected · ${fmt(selTotal)}`;
-        } else {
-            bar.classList.remove('visible');
-        }
-        // sync "select all" checkboxes
+        } else { bar.classList.remove('visible'); }
         ['paid','unpaid'].forEach(type => {
             const allCb = document.getElementById(`cb-all-${type}`);
             const rowCbs = [...document.querySelectorAll(`.txn-row-cb[data-type="${type}"]`)];
@@ -1262,14 +987,12 @@
             }
         });
     }
-
     function toggleSelectAll(type, clientName) {
         const allCb = document.getElementById(`cb-all-${type}`);
         const rowCbs = [...document.querySelectorAll(`.txn-row-cb[data-type="${type}"]`)];
         rowCbs.forEach(cb => cb.checked = allCb.checked);
         onRowCheck(clientName);
     }
-
     function clearAllChecks(clientName) {
         document.querySelectorAll('.txn-row-cb').forEach(cb => cb.checked = false);
         ['paid','unpaid'].forEach(type => {
@@ -1280,63 +1003,141 @@
         if (bar) bar.classList.remove('visible');
     }
 
+    /* ══════════════════════════════════════════════════════
+       PROFESSIONAL RECEIPT BUILDER
+    ══════════════════════════════════════════════════════ */
+    function generateBarcode() {
+        // Pseudo-random barcode bars for visual effect
+        const widths = [2,1,3,1,2,1,1,2,3,1,2,1,1,3,2,1,2,1,3,1,1,2,1,2,3,1,2,1,3,2];
+        return widths.map(w => {
+            const h = 20 + Math.floor(Math.random() * 12);
+            return `<span style="width:${w}px;height:${h}px;"></span>`;
+        }).join('');
+    }
+
+    function buildProfessionalReceipt({ client, date, rn, lines, isPaid = false, totalMeters = null }) {
+        // lines: array of { desc, qty, rate, amount }
+        const grandTotal = lines.reduce((s, l) => s + l.amount, 0);
+        const nowStr = date || new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+        const tm = totalMeters !== null ? totalMeters : lines.reduce((s,l) => s + (l.qty||0), 0);
+
+        const lineItems = lines.map(l => `
+            <div class="receipt-item">
+                <span class="receipt-item-desc">${l.desc}</span>
+                <span class="receipt-item-amt">${fmt(l.amount)}</span>
+            </div>
+            <div class="receipt-subtotal-row">
+                <span>${fmtM(l.qty)}m × ₱${l.rate}/m</span>
+            </div>`).join('');
+
+        return `
+        <div class="receipt-wrap">
+            <div class="receipt-inner">
+                <!-- HEADER -->
+                <div class="receipt-header">
+                    <div class="receipt-logo">passprints.</div>
+                    <div class="receipt-tagline">DTF Film Printing Service</div>
+                    <div class="receipt-cmyk">
+                        <span style="background:#00b0ff;"></span>
+                        <span style="background:#ff2da8;"></span>
+                        <span style="background:#ffd24a;"></span>
+                        <span style="background:#111;"></span>
+                    </div>
+                    <div style="font-size:10px;color:#888;font-family:'Courier New',monospace;">Angeles City, Pampanga · 0956 832 0608</div>
+                </div>
+
+                <!-- ORDER META -->
+                <div class="receipt-meta">
+                    <div class="receipt-meta-row"><span>Receipt No.</span><span style="font-weight:900;letter-spacing:0.05em;">#${rn}</span></div>
+                    <div class="receipt-meta-row"><span>Date</span><span>${nowStr}</span></div>
+                    <div class="receipt-meta-row"><span>Customer</span><span style="font-weight:700;">${client}</span></div>
+                </div>
+
+                <hr class="receipt-divider">
+
+                <!-- LINE ITEMS -->
+                <div class="receipt-section-label">— Order Details —</div>
+                ${lineItems}
+
+                <hr class="receipt-divider">
+
+                <!-- SUBTOTALS -->
+                ${tm ? `<div class="receipt-subtotal-row"><span>Total Meters</span><span style="font-weight:700;">${fmtM(tm)}m DTF Film</span></div>` : ''}
+
+                <!-- GRAND TOTAL -->
+                <div class="receipt-total">
+                    <span class="receipt-total-label">TOTAL DUE</span>
+                    <span class="receipt-total-amt">${fmt(grandTotal)}</span>
+                </div>
+
+                <!-- STATUS STAMP -->
+                <div style="text-align:center;margin:12px 0 4px;">
+                    <span class="receipt-stamp ${isPaid ? '' : 'unpaid-stamp'}">${isPaid ? '✓ PAID' : 'UNPAID'}</span>
+                </div>
+
+                <!-- PAYMENT METHODS -->
+                <div class="receipt-payment-section">
+                    <div class="receipt-payment-title">Payment Channels</div>
+                    <div class="receipt-payment-item">
+                        <span class="receipt-payment-badge" style="background:#CC0000;">BPI</span>
+                        <span>Bank of Philippine Islands — <strong>9929260433</strong></span>
+                    </div>
+                    <div class="receipt-payment-item">
+                        <span class="receipt-payment-badge" style="background:#0057A8;">BDO</span>
+                        <span>BDO Unibank — <strong>005520304611</strong></span>
+                    </div>
+                    <div class="receipt-payment-item">
+                        <span class="receipt-payment-badge" style="background:linear-gradient(135deg,#007DFF,#0055D4);">GC</span>
+                        <span>GCash · JOEMAREY S. PASAFORTE — <strong>0956 832 0608</strong></span>
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="receipt-footer">
+                    <div class="receipt-barcode">${generateBarcode()}</div>
+                    <div class="receipt-ref">${rn}-${Date.now().toString(36).toUpperCase()}</div>
+                    <div class="receipt-footer-text" style="margin-top:8px;">
+                        Thank you for choosing passprints.!<br>
+                        For concerns: 0956 832 0608
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+
     /* ── BULK: Generate Receipt ── */
-   function bulkGenReceipt(clientName) {
-    const gis = getCheckedGis();
-    if (!gis.length) { toast('Select at least one order'); return; }
-    const selected = gis.map(gi => dtfData[gi]).filter(Boolean);
-    const totalAmt = selected.reduce((s, r) => s + r.total, 0);
-    const totalMeters = selected.reduce((s, r) => s + r.qty, 0);
-    const rn = Math.floor(Math.random() * 900) + 1100;
-    const now = new Date().toLocaleDateString('en-PH');
+    function bulkGenReceipt(clientName) {
+        const gis = getCheckedGis();
+        if (!gis.length) { toast('Select at least one order'); return; }
+        const selected = gis.map(gi => dtfData[gi]).filter(Boolean);
+        const totalAmt = selected.reduce((s, r) => s + r.total, 0);
+        const totalMeters = selected.reduce((s, r) => s + r.qty, 0);
+        const rn = Math.floor(Math.random() * 900) + 1100;
+        const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+        const allPaid = selected.every(r => r.status === 'pd');
 
-    const lineItems = selected.map(r =>
-        `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
-           <span>${fmtM(r.qty)}m @ ₱${r.rate}/m <span style="font-size:10px;color:var(--muted);">(${r.date})</span></span>
-           <span style="font-weight:600;">${fmt(r.total)}</span>
-         </div>`
-    ).join('');
+        const lines = selected.map(r => ({
+            desc: `DTF Film (${r.date})`,
+            qty: r.qty, rate: r.rate, amount: r.total
+        }));
 
-    openModal(`
-    <div class="mhdr">
-      <button class="mclose" onclick="closeModal()">← Back</button>
-      <span class="mtitle">Receipt</span>
-      <span style="font-size:11px;color:var(--muted);font-weight:600;">#${rn}</span>
-    </div>
-    <div class="fsec">
-      <div style="background:var(--card-bg);border-radius:12px;border:1px solid var(--border);padding:18px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <div>
-            <div style="font-weight:800;font-size:15px;color:var(--text)">passprints.</div>
-            <div style="font-size:10px;color:var(--muted)">DTF Film Service</div>
-          </div>
-          <div style="display:flex;gap:4px;">
-            <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--cyan)"></span>
-            <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--magenta)"></span>
-            <span style="display:block;width:18px;height:4px;border-radius:3px;background:var(--yellow)"></span>
-            <span style="display:block;width:18px;height:4px;border-radius:3px;background:#0b0b0b"></span>
-          </div>
+        const receiptHtml = buildProfessionalReceipt({ client: clientName, date: now, rn, lines, isPaid: allPaid, totalMeters });
+
+        openModal(`
+        <div class="mhdr">
+          <button class="mclose" onclick="closeModal()">← Back</button>
+          <span class="mtitle">Receipt #${rn}</span>
+          <span class="badge ${allPaid ? 'paid' : 'unpaid'}">${allPaid ? 'Paid' : 'Unpaid'}</span>
         </div>
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Receipt #</span><span>${rn}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Date</span><span>${now}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Customer</span><span style="font-weight:600;">${clientName}</span></div>
-        <div class="divider"></div>
-        ${lineItems}
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="color:var(--muted)">Total meters</span><span style="font-weight:600;">${fmtM(totalMeters)}m</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;"><span>TOTAL</span><span style="color:var(--green);">${fmt(totalAmt)}</span></div>
-        <div class="divider"></div>
-        <div style="font-size:11px;color:var(--muted);text-align:center;">BPI: 9929260433 · BDO: 005520304611 · GCash available</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
-        <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
-        <button class="ibtn" style="font-size:13px;padding:9px;background:#0866FF;color:#fff;" onclick="shareR()"><i class="ti ti-brand-meta"></i> Send via Meta</button>
-      </div>
-    </div>`);
-
-    toast(`🧾 Receipt for ${gis.length} order${gis.length > 1 ? 's' : ''} generated`);
-}
+        <div class="fsec">
+          ${receiptHtml}
+          <div id="rcpt-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+            <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
+            <button class="ibtn" style="font-size:13px;padding:9px;background:#0866FF;color:#fff;" onclick="shareRFromModal(${JSON.stringify(clientName)},${rn},${totalAmt})"><i class="ti ti-brand-meta"></i> Send via Meta</button>
+          </div>
+        </div>`);
+        toast(`🧾 Receipt for ${gis.length} order${gis.length > 1 ? 's' : ''} generated`);
+    }
 
     /* ── BULK: Delete Selected Orders ── */
     function bulkDeleteOrders(clientName) {
@@ -1361,13 +1162,10 @@
           </div>
         </div>`);
     }
-
     function executeBulkDelete(clientName, gis) {
         const snapshot = snapshotState();
-        // Sort descending so splicing doesn't shift indices
         gis.sort((a, b) => b - a).forEach(gi => { if (dtfData[gi]) dtfData.splice(gi, 1); });
-        rebuildClientMap();
-        saveAppState();
+        rebuildClientMap(); saveAppState();
         recordAction('add_order', `Bulk deleted ${gis.length} orders — ${clientName}`, `${gis.length} order${gis.length > 1 ? 's' : ''} removed`, snapshot);
         renderDash(); buildClientList(); renderOrders();
         const remaining = dtfData.filter(r => r.name === clientName);
@@ -1375,39 +1173,6 @@
         toast(`🗑️ ${gis.length} order${gis.length > 1 ? 's' : ''} deleted`);
         if (remaining.length === 0 && !inSaved) closeModal();
         else openClient(clientName);
-    }
-
-    /* ── legacy toggleTxnStatus kept for compatibility ── */
-    function toggleTxnStatus(clientName, txnIndex) {
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
-        if (!txn) return;
-        const gi = dtfData.indexOf(txn);
-        toggleTxnByGi(clientName, gi);
-    }
-
-    function confirmToggleTxn(clientName, txnIndex, newStatus) {
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
-        if (!txn) return;
-        const gi = dtfData.indexOf(txn);
-        toggleTxnByGi(clientName, gi);
-    }
-
-    function confirmDeleteOrder(clientName, txnIndex) {
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
-        if (!txn) return;
-        const gi = dtfData.indexOf(txn);
-        confirmDeleteOrderByGi(clientName, gi);
-    }
-
-    function deleteOrder(clientName, txnIndex) {
-        const txns = dtfData.filter(r => r.name === clientName);
-        const txn = txns[txnIndex];
-        if (!txn) return;
-        const gi = dtfData.indexOf(txn);
-        deleteOrderByGi(clientName, gi);
     }
 
     /* ── ORDERS ── */
@@ -1423,9 +1188,8 @@
             || '<tr><td colspan="6" class="empty">No orders found</td></tr>';
     }
 
-    /* ── QUOTES / RECEIPTS ── */
+    /* ── QUOTES / RECEIPTS (Quote Builder tab) ── */
     function getRate(m) { if (m <= 19) return 170; if (m <= 50) return 160; if (m <= 100) return 150; if (m <= 200) return 140; return 130; }
-
     function calcQuote() {
         const m = parseFloat(document.getElementById('qMeters').value) || 0;
         if (!m) { document.getElementById('qResult').style.display = 'none'; return; }
@@ -1439,18 +1203,20 @@
     function genReceipt() {
         const client = document.getElementById('qClient').value || 'Customer';
         const m = parseFloat(document.getElementById('qMeters').value) || 0;
+        if (!m) { toast('Enter meters first'); return; }
         const r = getRate(m), t = m * r;
         const rn = Math.floor(Math.random() * 900) + 1100;
-        const now = new Date().toLocaleDateString('en-PH');
-        document.getElementById('receiptContent').innerHTML = `
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Receipt #</span><span>${rn}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Date</span><span>${now}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Customer</span><span style="font-weight:600;">${client}</span></div>
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>DTF Film</span><span>${fmtM(m)}m</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Rate per meter</span><span>₱${r}.00</span></div>
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;"><span>TOTAL</span><span style="color:var(--green);">${fmt(t)}</span></div>`;
+        const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+        const lines = [{ desc: 'DTF Film Printing', qty: m, rate: r, amount: t }];
+        const receiptHtml = buildProfessionalReceipt({ client, date: now, rn, lines, isPaid: false });
+
+        document.getElementById('receiptCard').innerHTML = `
+        ${receiptHtml}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+            <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
+            <button class="ibtn" style="font-size:13px;padding:9px;background:#0866FF;color:#fff;" onclick="shareR()"><i class="ti ti-brand-meta"></i> Send via Meta</button>
+        </div>`;
         document.getElementById('receiptCard').style.display = 'block';
         document.getElementById('receiptEmpty').style.display = 'none';
     }
@@ -1459,41 +1225,51 @@
         showPage('quotes', null);
         document.getElementById('qClient').value = name;
         const rn = Math.floor(Math.random() * 900) + 1100;
-        const now = new Date().toLocaleDateString('en-PH');
-        document.getElementById('receiptContent').innerHTML = `
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Receipt #</span><span>${rn}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Date</span><span>${now}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">Customer</span><span style="font-weight:600;">${name}</span></div>
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>DTF Film Service</span><span>—</span></div>
-        <div class="divider"></div>
-        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;"><span>TOTAL</span><span style="color:var(--green);">${fmt(total)}</span></div>`;
+        const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+        // Try to build from actual txns for this client
+        const txns = dtfData.filter(r => r.name === name);
+        let lines, tm;
+        if (txns.length > 0) {
+            lines = txns.map(r => ({ desc: `DTF Film (${r.date})`, qty: r.qty, rate: r.rate, amount: r.total }));
+            tm = txns.reduce((s, r) => s + r.qty, 0);
+        } else {
+            lines = [{ desc: 'DTF Film Printing', qty: 0, rate: 0, amount: total }];
+            tm = null;
+        }
+        const allPaid = txns.length > 0 && txns.every(r => r.status === 'pd');
+        const receiptHtml = buildProfessionalReceipt({ client: name, date: now, rn, lines, isPaid: allPaid, totalMeters: tm });
+
+        document.getElementById('receiptCard').innerHTML = `
+        ${receiptHtml}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+            <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="window.print()"><i class="ti ti-printer"></i> Print</button>
+            <button class="ibtn" style="font-size:13px;padding:9px;background:#0866FF;color:#fff;" onclick="shareR()"><i class="ti ti-brand-meta"></i> Send via Meta</button>
+        </div>`;
         document.getElementById('receiptCard').style.display = 'block';
         document.getElementById('receiptEmpty').style.display = 'none';
     }
 
-    /* ── META BUSINESS SUITE SHARE ── */
+    /* ── META SHARE ── */
+    function buildShareMsg(clientName, rn, totalAmt) {
+        return `🧾 *passprints. Receipt*\n\nReceipt #: ${rn}\nCustomer: ${clientName}\nTotal: ${fmt(totalAmt)}\n\nPayment: BPI 9929260433 · BDO 005520304611 · GCash 0956 832 0608\n\nThank you for your order! 🎨`;
+    }
+
+    function shareRFromModal(clientName, rn, totalAmt) {
+        const msg = buildShareMsg(clientName, rn, totalAmt);
+        showShareModal(msg);
+    }
+
     function shareR() {
-        // Grab the visible receipt text to build the message
-        const receiptEl = document.getElementById('receiptContent');
-        let receiptText = '';
-        if (receiptEl) {
-            // Build a clean text version from the receipt DOM
-            const rows = receiptEl.querySelectorAll('[style*="justify-content:space-between"]');
-            const lines = [];
-            rows.forEach(row => {
-                const spans = row.querySelectorAll('span');
-                if (spans.length >= 2) {
-                    const label = spans[0].textContent.trim();
-                    const value = spans[1].textContent.trim();
-                    if (label && value) lines.push(`${label}: ${value}`);
-                }
-            });
-            receiptText = lines.join('\n');
-        }
+        const client = document.getElementById('qClient')?.value || 'Customer';
+        const m = parseFloat(document.getElementById('qMeters')?.value) || 0;
+        const r = getRate(m), t = m * r;
+        const rn = Math.floor(Math.random() * 900) + 1100;
+        const msg = buildShareMsg(client, rn, t);
+        showShareModal(msg);
+    }
 
-        const metaMsg = `🧾 *passprints. Receipt*\n\n${receiptText}\n\nPayment: BPI 9929260433 · BDO 005520304611 · GCash available\n\nThank you for your order! 🎨`;
-
+    function showShareModal(metaMsg) {
         openModal(`
         <div class="mhdr" style="background:linear-gradient(135deg,#0866FF,#1877f2);color:#fff;">
           <button class="mclose" onclick="closeModal()" style="color:#fff;opacity:0.85;">← Back</button>
@@ -1501,54 +1277,35 @@
           <span></span>
         </div>
         <div class="fsec">
-
-          <!-- Preview -->
           <div style="background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:8px;">Message Preview</div>
             <pre style="font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-word;font-family:var(--font);margin:0;line-height:1.6;">${metaMsg}</pre>
           </div>
-
-          <!-- Copy button -->
           <button class="ibtn" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text);font-size:13px;padding:9px;margin-bottom:10px;" onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)}).then(()=>toast('✅ Message copied!'))"><i class="ti ti-copy"></i> Copy Message</button>
-
-          <!-- Open Meta Business Suite -->
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px;">Open Inbox & Choose Conversation</div>
-
           <div style="display:grid;gap:8px;">
-            <a href="https://business.facebook.com/latest/inbox/all?mailbox_id=&selected_item_id=" target="_blank" rel="noopener"
+            <a href="https://business.facebook.com/latest/inbox/all" target="_blank" rel="noopener"
               onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)});toast('✅ Copied! Paste in your Meta inbox.');"
-              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0866FF;border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0866FF;border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;">
               <span style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="ti ti-brand-messenger"></i></span>
-              <div>
-                <div>Messenger Inbox</div>
-                <div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com — choose your conversation</div>
-              </div>
+              <div><div>Messenger Inbox</div><div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com</div></div>
               <i class="ti ti-external-link" style="margin-left:auto;opacity:0.7;"></i>
             </a>
-
             <a href="https://business.facebook.com/latest/inbox/instagram_all" target="_blank" rel="noopener"
               onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)});toast('✅ Copied! Paste in your Instagram inbox.');"
-              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#E1306C,#833AB4,#F77737);border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#E1306C,#833AB4,#F77737);border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;">
               <span style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="ti ti-brand-instagram"></i></span>
-              <div>
-                <div>Instagram Inbox</div>
-                <div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com — choose your DM conversation</div>
-              </div>
+              <div><div>Instagram Inbox</div><div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com</div></div>
               <i class="ti ti-external-link" style="margin-left:auto;opacity:0.7;"></i>
             </a>
-
             <a href="https://business.facebook.com/latest/inbox/whatsapp_all" target="_blank" rel="noopener"
               onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)});toast('✅ Copied! Paste in your WhatsApp inbox.');"
-              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#25D366;border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#25D366;border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;">
               <span style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="ti ti-brand-whatsapp"></i></span>
-              <div>
-                <div>WhatsApp Business Inbox</div>
-                <div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com — choose your customer chat</div>
-              </div>
+              <div><div>WhatsApp Business Inbox</div><div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com</div></div>
               <i class="ti ti-external-link" style="margin-left:auto;opacity:0.7;"></i>
             </a>
           </div>
-
           <div style="margin-top:12px;padding:10px 12px;background:rgba(8,102,255,0.07);border:1px solid rgba(8,102,255,0.2);border-radius:8px;font-size:11px;color:var(--muted);display:flex;align-items:flex-start;gap:6px;">
             <i class="ti ti-info-circle" style="font-size:13px;color:#0866FF;flex-shrink:0;margin-top:1px;"></i>
             <span>The receipt message is auto-copied to your clipboard. Click any inbox above, find your customer's conversation, and paste to send.</span>
@@ -1569,7 +1326,6 @@
           </div>
         </div>`);
     }
-
     function confirmClearData2() {
         openModal(`<div class="mhdr" style="border-bottom:1px solid rgba(255,59,48,0.3);background:rgba(255,59,48,0.06);"><button class="mclose" onclick="closeModal()">Cancel</button><span class="mtitle" style="color:var(--red);">⚠️ Final Warning</span><span></span></div>
         <div class="fsec" style="text-align:center;padding:28px 18px 22px;">
@@ -1583,7 +1339,6 @@
           </div>
         </div>`);
     }
-
     function clearAllData() {
         const orderCount = dtfData.length, clientCount = clients.length;
         dtfData.splice(0, dtfData.length); clients.splice(0, clients.length);
@@ -1596,9 +1351,8 @@
         toast('🗑️ All data cleared');
     }
 
-    /* ── ADD ORDER / CLIENT MODALS ── */
+    /* ── ADD ORDER / CLIENT ── */
     function openAdd() { openNewTxn(); }
-
     function openNewTxn() {
         openModal(`<div class="mhdr"><button class="mclose" onclick="closeModal()">Cancel</button><span class="mtitle">New Order</span><span style="font-size:11px;color:var(--muted);font-weight:600;">Auto-saves on submit</span></div>
         <div class="fsec">
@@ -1618,7 +1372,6 @@
         </div>`);
         document.getElementById('nt-date').valueAsDate = new Date();
     }
-
     function autoRate() {
         const m = parseFloat(document.getElementById('nt-qty').value) || 0;
         const r = getRate(m);
@@ -1626,7 +1379,6 @@
         document.getElementById('nt-calc').style.display = 'block';
         document.getElementById('nt-tot').textContent = fmt(m * r);
     }
-
     function addTxn() {
         const name = document.getElementById('nt-name').value.trim() || 'Customer';
         const qty = parseFloat(document.getElementById('nt-qty').value) || 0;
@@ -1645,7 +1397,6 @@
         recordAction('add_order', `Order added — ${name}`, `${qty}m @ ₱${rate}/m · ${fmt(total)} · ${status === 'pd' ? 'Paid' : 'Unpaid'} · ${date}`, snapshot);
         toast('Order added!'); renderDash(); buildClientList(); renderOrders();
     }
-
     function openAddClient() {
         openModal(`<div class="mhdr"><button class="mclose" onclick="closeModal()">Cancel</button><span class="mtitle">New Customer</span><span style="font-size:11px;color:var(--muted);font-weight:600;">Auto-saves on submit</span></div>
         <div class="fsec">
@@ -1658,7 +1409,6 @@
           <button class="ibtn ibtn-bl" onclick="addClientSave()"><i class="ti ti-user-plus"></i> Add Customer</button>
         </div>`);
     }
-
     function addClientSave() {
         const name = document.getElementById('nc-name').value.trim() || 'New Customer';
         const phone = document.getElementById('nc-phone').value.trim();
@@ -1737,7 +1487,6 @@
         };
         reader.readAsArrayBuffer(file);
     }
-
     function downloadTemplate() {
         const ws = XLSX.utils.aoa_to_sheet([
             ['DATE', 'CUSTOMER', 'QTY', 'AMOUNT', 'TOTAL', 'STATUS'],
