@@ -694,7 +694,7 @@
     }
 
     function fmt(n) { return '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-   function fmtM(n) { const v = parseFloat(n || 0); return v % 1 === 0 ? v.toString() : v.toFixed(2); }
+    function fmtM(n) { const v = parseFloat(n || 0); return v % 1 === 0 ? v.toString() : v.toString(); }
     function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
 
     /* ── NAVIGATION ── */
@@ -824,7 +824,7 @@
     }
     function openClientById(name) { const c = clientMap[name]; if (c) openClient(c); }
 
-  // Replace your entire openClient function with this.
+    // Replace your entire openClient function with this.
 
 function openClient(cOrName) {
     const name = (typeof cOrName === 'string') ? cOrName : cOrName.name;
@@ -979,6 +979,7 @@ function switchClientTab(tab) {
         unpaidBtn.style.color      = 'var(--muted)';
     }
 }
+
     /* Highlight checked row */
     function syncRowHighlight(cb) {
         const row = cb.closest('tr');
