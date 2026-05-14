@@ -168,11 +168,9 @@
         .today-box { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-bg); font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; flex-shrink: 0; transition: background 0.3s, border-color 0.3s; }
         .today-box i { font-size: 15px; color: var(--accent); }
 
-        /* ══════════════════════════════════════════════════
-           TXN SECTIONS — VERTICAL STACKED, 5-ROW SCROLLABLE
-        ══════════════════════════════════════════════════ */
+        /* ── TXN SECTION HEADERS — VERTICAL STACKED LAYOUT ── */
         .txn-section {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             border-radius: 12px;
             overflow: hidden;
             border: 1px solid var(--border);
@@ -181,50 +179,29 @@
             display: flex; align-items: center; justify-content: space-between;
             padding: 10px 14px;
             font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-            position: sticky; top: 0; z-index: 3;
-        }
-        .txn-section.unpaid-section .txn-section-hdr {
-            background: rgba(255,59,48,0.07);
-            color: #b52b22;
-            border-bottom: 1px solid rgba(255,59,48,0.15);
         }
         .txn-section.paid-section .txn-section-hdr {
             background: rgba(52,199,89,0.08);
             color: #2a9a45;
             border-bottom: 1px solid rgba(52,199,89,0.15);
         }
+        .txn-section.unpaid-section .txn-section-hdr {
+            background: rgba(255,59,48,0.07);
+            color: #b52b22;
+            border-bottom: 1px solid rgba(255,59,48,0.15);
+        }
         [data-theme="dark"] .txn-section.paid-section .txn-section-hdr { color: #34C759; }
         [data-theme="dark"] .txn-section.unpaid-section .txn-section-hdr { color: #ff6b63; }
 
-        /* Scrollable body capped at 5 rows (~46px each + thead ~38px) */
-        .txn-scroll-body {
-            max-height: calc(5 * 46px);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-strong) transparent;
-        }
-        .txn-scroll-body::-webkit-scrollbar { width: 4px; }
-        .txn-scroll-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
-
         .txn-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .txn-tbl-head { position: sticky; top: 0; z-index: 2; }
         .txn-tbl th { padding: 7px 10px; text-align: left; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--bg-secondary); }
         .txn-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
-        .txn-tbl tr:last-child td { border-bottom: none; }
-        .txn-tbl tr:hover td { background: var(--row-hover); }
-        /* Highlight selected rows */
-        .txn-tbl tr.row-checked td { background: var(--row-selected) !important; }
+        .txn-tbl tr:last-child td { border-bottom: none; } .txn-tbl tr:hover td { background: var(--row-hover); }
         .txn-cb { width: 32px; padding: 9px 4px 9px 10px !important; }
         .txn-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
 
         /* ── BULK ACTION BAR ── */
-        .bulk-bar {
-            display: none; align-items: center; gap: 8px;
-            padding: 8px 12px; border-radius: 8px;
-            background: rgba(91,75,255,0.08); border: 1px solid rgba(91,75,255,0.25);
-            margin-bottom: 10px; flex-wrap: wrap;
-            animation: fadeUp 200ms cubic-bezier(.2,.9,.2,1) both;
-        }
+        .bulk-bar { display: none; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: rgba(91,75,255,0.08); border: 1px solid rgba(91,75,255,0.25); margin-bottom: 10px; flex-wrap: wrap; animation: fadeUp 200ms cubic-bezier(.2,.9,.2,1) both; }
         .bulk-bar.visible { display: flex; }
         .bulk-bar .bulk-label { font-size: 12px; font-weight: 700; color: var(--accent); flex: 1; }
         .bulk-btn { padding: 6px 12px; border-radius: 7px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; font-family: var(--font); display: inline-flex; align-items: center; gap: 5px; transition: opacity .15s, transform .15s; }
@@ -245,10 +222,12 @@
             overflow: hidden;
             position: relative;
         }
+        /* Jagged top/bottom edge — receipt paper look */
         .receipt-wrap::before, .receipt-wrap::after {
             content: '';
             display: block;
             height: 10px;
+            background: radial-gradient(circle at 5px 0, transparent 5px, #fff 5px) -5px 0 / 10px 10px repeat-x;
         }
         .receipt-wrap::before { background: radial-gradient(circle at 5px 10px, transparent 5px, #fff 5px) -5px 0 / 10px 10px repeat-x; border-top: 1px dashed #ddd; }
         .receipt-wrap::after { background: radial-gradient(circle at 5px 0, transparent 5px, #fff 5px) -5px 0 / 10px 10px repeat-x; border-bottom: 1px dashed #ddd; }
@@ -287,13 +266,15 @@
         }
         .receipt-stamp.unpaid-stamp { border-color: #FF3B30; color: #FF3B30; }
 
-        @media print {
-            body > *:not(.overlay) { display: none !important; }
-            .overlay { display: block !important; position: static !important; background: none !important; }
-            .sheet { box-shadow: none !important; max-height: none !important; border-radius: 0 !important; }
-            .mhdr, .ibtn, #rcpt-actions { display: none !important; }
-            .receipt-wrap { box-shadow: none !important; }
-        }
+        /* Print receipt cleanly */
+       @media print {
+    body > *:not(.overlay) { display: none !important; }
+    .overlay { display: block !important; position: static !important; background: none !important; }
+    .sheet { box-shadow: none !important; max-height: none !important; border-radius: 0 !important; }
+    .mhdr, .ibtn, #rcpt-actions { display: none !important; }
+    .receipt-wrap { box-shadow: none !important; }
+    @page { size: 80mm auto; margin: 0; }
+}
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -694,7 +675,7 @@
     }
 
     function fmt(n) { return '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-    function fmtM(n) { const v = parseFloat(n || 0); return v % 1 === 0 ? v.toString() : v.toString(); }
+    function fmtM(n) { const v = parseFloat(n || 0); return v % 1 === 0 ? v.toString() : v.toFixed(2); }
     function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
 
     /* ── NAVIGATION ── */
@@ -824,7 +805,10 @@
     }
     function openClientById(name) { const c = clientMap[name]; if (c) openClient(c); }
 
-    // Replace your entire openClient function with this.
+    /* ══════════════════════════════════════════════════════
+       OPEN CLIENT — VERTICAL PAID / UNPAID SECTIONS
+    ══════════════════════════════════════════════════════ */
+// Replace your entire openClient function with this.
 
 function openClient(cOrName) {
     const name = (typeof cOrName === 'string') ? cOrName : cOrName.name;
@@ -979,13 +963,6 @@ function switchClientTab(tab) {
         unpaidBtn.style.color      = 'var(--muted)';
     }
 }
-
-    /* Highlight checked row */
-    function syncRowHighlight(cb) {
-        const row = cb.closest('tr');
-        if (row) row.classList.toggle('row-checked', cb.checked);
-    }
-
     /* ── toggle a single txn by global index ── */
     function toggleTxnByGi(clientName, gi) {
         const txn = dtfData[gi];
@@ -1041,17 +1018,12 @@ function switchClientTab(tab) {
         const gis = getCheckedGis();
         const bar = document.getElementById('bulk-bar');
         const lbl = document.getElementById('bulk-label');
-        const hint = document.getElementById('select-hint');
         if (!bar || !lbl) return;
         if (gis.length > 0) {
             bar.classList.add('visible');
-            if (hint) hint.style.display = 'none';
             const selTotal = gis.reduce((s, gi) => s + (dtfData[gi] ? dtfData[gi].total : 0), 0);
             lbl.textContent = `${gis.length} selected · ${fmt(selTotal)}`;
-        } else {
-            bar.classList.remove('visible');
-            if (hint) hint.style.display = 'block';
-        }
+        } else { bar.classList.remove('visible'); }
         ['paid','unpaid'].forEach(type => {
             const allCb = document.getElementById(`cb-all-${type}`);
             const rowCbs = [...document.querySelectorAll(`.txn-row-cb[data-type="${type}"]`)];
@@ -1065,28 +1037,24 @@ function switchClientTab(tab) {
     function toggleSelectAll(type, clientName) {
         const allCb = document.getElementById(`cb-all-${type}`);
         const rowCbs = [...document.querySelectorAll(`.txn-row-cb[data-type="${type}"]`)];
-        rowCbs.forEach(cb => {
-            cb.checked = allCb.checked;
-            syncRowHighlight(cb);
-        });
+        rowCbs.forEach(cb => cb.checked = allCb.checked);
         onRowCheck(clientName);
     }
     function clearAllChecks(clientName) {
-        document.querySelectorAll('.txn-row-cb').forEach(cb => { cb.checked = false; syncRowHighlight(cb); });
+        document.querySelectorAll('.txn-row-cb').forEach(cb => cb.checked = false);
         ['paid','unpaid'].forEach(type => {
             const allCb = document.getElementById(`cb-all-${type}`);
             if (allCb) { allCb.checked = false; allCb.indeterminate = false; }
         });
         const bar = document.getElementById('bulk-bar');
         if (bar) bar.classList.remove('visible');
-        const hint = document.getElementById('select-hint');
-        if (hint) hint.style.display = 'block';
     }
 
     /* ══════════════════════════════════════════════════════
        PROFESSIONAL RECEIPT BUILDER
     ══════════════════════════════════════════════════════ */
     function generateBarcode() {
+        // Pseudo-random barcode bars for visual effect
         const widths = [2,1,3,1,2,1,1,2,3,1,2,1,1,3,2,1,2,1,3,1,1,2,1,2,3,1,2,1,3,2];
         return widths.map(w => {
             const h = 20 + Math.floor(Math.random() * 12);
@@ -1095,6 +1063,7 @@ function switchClientTab(tab) {
     }
 
     function buildProfessionalReceipt({ client, date, rn, lines, isPaid = false, totalMeters = null }) {
+        // lines: array of { desc, qty, rate, amount }
         const grandTotal = lines.reduce((s, l) => s + l.amount, 0);
         const nowStr = date || new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
         const tm = totalMeters !== null ? totalMeters : lines.reduce((s,l) => s + (l.qty||0), 0);
@@ -1111,6 +1080,7 @@ function switchClientTab(tab) {
         return `
         <div class="receipt-wrap">
             <div class="receipt-inner">
+                <!-- HEADER -->
                 <div class="receipt-header">
                     <div class="receipt-logo">passprints.</div>
                     <div class="receipt-tagline">DTF Film Printing Service</div>
@@ -1120,25 +1090,39 @@ function switchClientTab(tab) {
                         <span style="background:#ffd24a;"></span>
                         <span style="background:#111;"></span>
                     </div>
-                    <div style="font-size:10px;color:#888;font-family:'Courier New',monospace;">Angeles City, Pampanga · 0956 832 0608</div>
+                    <div style="font-size:10px;color:#888;font-family:'Courier New',monospace;">San Fernando City, Pampanga · 0956 832 0608</div>
                 </div>
+
+                <!-- ORDER META -->
                 <div class="receipt-meta">
                     <div class="receipt-meta-row"><span>Receipt No.</span><span style="font-weight:900;letter-spacing:0.05em;">#${rn}</span></div>
                     <div class="receipt-meta-row"><span>Date</span><span>${nowStr}</span></div>
                     <div class="receipt-meta-row"><span>Customer</span><span style="font-weight:700;">${client}</span></div>
                 </div>
+
                 <hr class="receipt-divider">
+
+                <!-- LINE ITEMS -->
                 <div class="receipt-section-label">— Order Details —</div>
                 ${lineItems}
+
                 <hr class="receipt-divider">
+
+                <!-- SUBTOTALS -->
                 ${tm ? `<div class="receipt-subtotal-row"><span>Total Meters</span><span style="font-weight:700;">${fmtM(tm)}m DTF Film</span></div>` : ''}
+
+                <!-- GRAND TOTAL -->
                 <div class="receipt-total">
                     <span class="receipt-total-label">TOTAL DUE</span>
                     <span class="receipt-total-amt">${fmt(grandTotal)}</span>
                 </div>
+
+                <!-- STATUS STAMP -->
                 <div style="text-align:center;margin:12px 0 4px;">
                     <span class="receipt-stamp ${isPaid ? '' : 'unpaid-stamp'}">${isPaid ? '✓ PAID' : 'UNPAID'}</span>
                 </div>
+
+                <!-- PAYMENT METHODS -->
                 <div class="receipt-payment-section">
                     <div class="receipt-payment-title">Payment Channels</div>
                     <div class="receipt-payment-item">
@@ -1154,34 +1138,49 @@ function switchClientTab(tab) {
                         <span>GCash · JOEMAREY S. PASAFORTE — <strong>0956 832 0608</strong></span>
                     </div>
                 </div>
-                <div class="receipt-footer">
+
+                <!-- FOOTER -->
+               <div class="receipt-footer">
                     <div class="receipt-barcode">${generateBarcode()}</div>
                     <div class="receipt-ref">${rn}-${Date.now().toString(36).toUpperCase()}</div>
                     <div class="receipt-footer-text" style="margin-top:8px;">
                         Thank you for choosing passprints.!<br>
                         For concerns: 0956 832 0608
                     </div>
+                    <div style="display:flex;justify-content:center;gap:32px;margin-top:14px;padding-top:12px;border-top:1px dashed #ccc;">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#333;font-family:'Inter',sans-serif;cursor:pointer;">
+                            <span style="width:18px;height:18px;border:2px solid #333;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:#34C759;" id="chk-paid-box">&#10003;</span>
+                            PAID
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#333;font-family:'Inter',sans-serif;cursor:pointer;">
+                            <span style="width:18px;height:18px;border:2px solid #333;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;" id="chk-unpaid-box"></span>
+                            UNPAID
+                        </label>
+                    </div>
                 </div>
-            </div>
-        </div>`;
     }
 
-    /* ── BULK: Generate Receipt for selected rows ── */
+    /* ── BULK: Generate Receipt ── */
     function bulkGenReceipt(clientName) {
         const gis = getCheckedGis();
         if (!gis.length) { toast('Select at least one order'); return; }
         const selected = gis.map(gi => dtfData[gi]).filter(Boolean);
+        const totalAmt = selected.reduce((s, r) => s + r.total, 0);
         const totalMeters = selected.reduce((s, r) => s + r.qty, 0);
         const rn = Math.floor(Math.random() * 900) + 1100;
         const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
         const allPaid = selected.every(r => r.status === 'pd');
-        const lines = selected.map(r => ({ desc: `DTF Film (${r.date})`, qty: r.qty, rate: r.rate, amount: r.total }));
+
+        const lines = selected.map(r => ({
+            desc: `DTF Film (${r.date})`,
+            qty: r.qty, rate: r.rate, amount: r.total
+        }));
+
         const receiptHtml = buildProfessionalReceipt({ client: clientName, date: now, rn, lines, isPaid: allPaid, totalMeters });
-        const totalAmt = selected.reduce((s, r) => s + r.total, 0);
 
         openModal(`
         <div class="mhdr">
-          <button class="mclose" onclick="openClient('${clientName.replace(/'/g,"\\'")}')">← Back</button>
+          <button class="mclose" onclick="closeModal()">← Back</button>
           <span class="mtitle">Receipt #${rn}</span>
           <span class="badge ${allPaid ? 'paid' : 'unpaid'}">${allPaid ? 'Paid' : 'Unpaid'}</span>
         </div>
@@ -1194,6 +1193,72 @@ function switchClientTab(tab) {
         </div>`);
         toast(`🧾 Receipt for ${gis.length} order${gis.length > 1 ? 's' : ''} generated`);
     }
+
+    
+    function printReceipt(containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) { window.print(); return; }
+    const content = el.querySelector('.receipt-wrap');
+    if (!content) { window.print(); return; }
+    const win = window.open('', '_blank', 'width=420,height=700');
+    win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Receipt — passprints.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fff; font-family: 'Courier New', monospace; }
+  @media print {
+    @page { size: 80mm auto; margin: 0; }
+    body { width: 80mm; }
+  }
+  .receipt-wrap { background:#fff; font-family:'Courier New',Courier,monospace; color:#111; position:relative; }
+  .receipt-wrap::before,.receipt-wrap::after { content:''; display:block; height:10px; }
+  .receipt-wrap::before { background:radial-gradient(circle at 5px 10px,transparent 5px,#fff 5px) -5px 0/10px 10px repeat-x; border-top:1px dashed #ddd; }
+  .receipt-wrap::after { background:radial-gradient(circle at 5px 0,transparent 5px,#fff 5px) -5px 0/10px 10px repeat-x; border-bottom:1px dashed #ddd; }
+  .receipt-inner { padding:16px 22px 20px; }
+  .receipt-header { text-align:center; margin-bottom:14px; padding-bottom:14px; border-bottom:1px dashed #ccc; }
+  .receipt-logo { font-size:22px; font-weight:900; letter-spacing:-0.03em; color:#111; font-family:'Inter',sans-serif; }
+  .receipt-tagline { font-size:10px; color:#666; margin-top:2px; text-transform:uppercase; letter-spacing:0.1em; }
+  .receipt-cmyk { display:flex; gap:3px; justify-content:center; margin:8px 0 4px; }
+  .receipt-cmyk span { display:block; width:22px; height:4px; border-radius:2px; }
+  .receipt-meta { font-size:11px; color:#444; line-height:2; }
+  .receipt-meta-row { display:flex; justify-content:space-between; }
+  .receipt-meta-row span:first-child { color:#888; }
+  .receipt-divider { border:none; border-top:1px dashed #ccc; margin:10px 0; }
+  .receipt-section-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin:8px 0 4px; }
+  .receipt-item { display:flex; justify-content:space-between; align-items:baseline; font-size:12px; line-height:1.8; }
+  .receipt-item-desc { color:#333; flex:1; }
+  .receipt-item-amt { font-weight:700; color:#111; white-space:nowrap; margin-left:8px; }
+  .receipt-subtotal-row { display:flex; justify-content:space-between; font-size:11px; color:#666; padding:2px 0; }
+  .receipt-total { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:2px solid #111; }
+  .receipt-total-label { font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:0.08em; font-family:'Inter',sans-serif; }
+  .receipt-total-amt { font-size:20px; font-weight:900; color:#111; font-family:'Inter',sans-serif; }
+  .receipt-payment-section { margin-top:14px; padding-top:10px; border-top:1px dashed #ccc; }
+  .receipt-payment-title { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:6px; }
+  .receipt-payment-item { display:flex; align-items:center; gap:8px; font-size:11px; margin-bottom:4px; color:#444; }
+  .receipt-payment-badge { font-size:9px; font-weight:900; padding:2px 6px; border-radius:3px; color:#fff; font-family:'Inter',sans-serif; white-space:nowrap; }
+  .receipt-footer { text-align:center; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+  .receipt-footer-text { font-size:11px; color:#777; line-height:1.8; }
+  .receipt-barcode { margin:10px auto 4px; display:flex; justify-content:center; gap:1px; height:32px; align-items:flex-end; }
+  .receipt-barcode span { background:#222; display:inline-block; }
+  .receipt-ref { font-size:10px; color:#aaa; letter-spacing:0.2em; margin-top:4px; }
+  .receipt-stamp { display:inline-block; border:2.5px solid #34C759; color:#34C759; font-size:11px; font-weight:900; padding:3px 12px; border-radius:3px; text-transform:uppercase; letter-spacing:0.15em; transform:rotate(-5deg); margin-top:6px; font-family:'Inter',sans-serif; }
+  .receipt-stamp.unpaid-stamp { border-color:#FF3B30; color:#FF3B30; }
+  .payment-status-boxes { display:flex; justify-content:center; gap:32px; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+  .payment-status-boxes label { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#333; font-family:'Inter',sans-serif; }
+  .status-box { width:18px; height:18px; border:2px solid #333; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px; }
+  .status-box.checked { color:#34C759; }
+</style>
+</head><body>
+${content.outerHTML}
+<div class="payment-status-boxes">
+  <label><span class="status-box checked">&#10003;</span> PAID</label>
+  <label><span class="status-box"></span> UNPAID</label>
+</div>
+</body></html>`);
+    win.document.close();
+    win.onload = function() { win.focus(); win.print(); };
+}
 
     /* ── BULK: Delete Selected Orders ── */
     function bulkDeleteOrders(clientName) {
@@ -1244,17 +1309,25 @@ function switchClientTab(tab) {
             || '<tr><td colspan="6" class="empty">No orders found</td></tr>';
     }
 
-    /* ── QUOTES / RECEIPTS ── */
-    function getRate(m) { if (m <= 19) return 170; if (m <= 50) return 160; if (m <= 100) return 150; if (m <= 200) return 140; return 130; }
-    function calcQuote() {
-        const m = parseFloat(document.getElementById('qMeters').value) || 0;
-        if (!m) { document.getElementById('qResult').style.display = 'none'; return; }
-        const r = getRate(m), t = m * r;
-        document.getElementById('qM').textContent = fmtM(m) + 'm';
-        document.getElementById('qR').textContent = '₱' + r + '/m';
-        document.getElementById('qT').textContent = fmt(t);
-        document.getElementById('qResult').style.display = 'block';
-    }
+    /* ── QUOTES / RECEIPTS (Quote Builder tab) ── */
+   function genReceipt() {
+    const client = document.getElementById('qClient').value || 'Customer';
+    const m = parseFloat(document.getElementById('qMeters').value) || 0;
+    if (!m) { toast('Enter meters first'); return; }
+    const r = getRate(m), t = m * r;
+    const rn = Math.floor(Math.random() * 900) + 1100;
+    const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+    const lines = [{ desc: 'DTF Film Printing', qty: m, rate: r, amount: t }];
+    const receiptHtml = buildProfessionalReceipt({ client, date: now, rn, lines, isPaid: false });
+    document.getElementById('receiptCard').innerHTML = `
+    ${receiptHtml}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+        <button class="ibtn ibtn-bl" style="font-size:13px;padding:9px" onclick="printReceipt('receiptCard')"><i class="ti ti-printer"></i> Print</button>
+        <button class="ibtn" style="font-size:13px;padding:9px;background:#0866FF;color:#fff;" onclick="shareR()"><i class="ti ti-brand-meta"></i> Send via Meta</button>
+    </div>`;
+    document.getElementById('receiptCard').style.display = 'block';
+    document.getElementById('receiptEmpty').style.display = 'none';
+}
 
     function genReceipt() {
         const client = document.getElementById('qClient').value || 'Customer';
@@ -1263,8 +1336,10 @@ function switchClientTab(tab) {
         const r = getRate(m), t = m * r;
         const rn = Math.floor(Math.random() * 900) + 1100;
         const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
         const lines = [{ desc: 'DTF Film Printing', qty: m, rate: r, amount: t }];
         const receiptHtml = buildProfessionalReceipt({ client, date: now, rn, lines, isPaid: false });
+
         document.getElementById('receiptCard').innerHTML = `
         ${receiptHtml}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
@@ -1280,6 +1355,8 @@ function switchClientTab(tab) {
         document.getElementById('qClient').value = name;
         const rn = Math.floor(Math.random() * 900) + 1100;
         const now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+        // Try to build from actual txns for this client
         const txns = dtfData.filter(r => r.name === name);
         let lines, tm;
         if (txns.length > 0) {
@@ -1291,6 +1368,7 @@ function switchClientTab(tab) {
         }
         const allPaid = txns.length > 0 && txns.every(r => r.status === 'pd');
         const receiptHtml = buildProfessionalReceipt({ client: name, date: now, rn, lines, isPaid: allPaid, totalMeters: tm });
+
         document.getElementById('receiptCard').innerHTML = `
         ${receiptHtml}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
@@ -1305,14 +1383,21 @@ function switchClientTab(tab) {
     function buildShareMsg(clientName, rn, totalAmt) {
         return `🧾 *passprints. Receipt*\n\nReceipt #: ${rn}\nCustomer: ${clientName}\nTotal: ${fmt(totalAmt)}\n\nPayment: BPI 9929260433 · BDO 005520304611 · GCash 0956 832 0608\n\nThank you for your order! 🎨`;
     }
-    function shareRFromModal(clientName, rn, totalAmt) { showShareModal(buildShareMsg(clientName, rn, totalAmt)); }
+
+    function shareRFromModal(clientName, rn, totalAmt) {
+        const msg = buildShareMsg(clientName, rn, totalAmt);
+        showShareModal(msg);
+    }
+
     function shareR() {
         const client = document.getElementById('qClient')?.value || 'Customer';
         const m = parseFloat(document.getElementById('qMeters')?.value) || 0;
         const r = getRate(m), t = m * r;
         const rn = Math.floor(Math.random() * 900) + 1100;
-        showShareModal(buildShareMsg(client, rn, t));
+        const msg = buildShareMsg(client, rn, t);
+        showShareModal(msg);
     }
+
     function showShareModal(metaMsg) {
         openModal(`
         <div class="mhdr" style="background:linear-gradient(135deg,#0866FF,#1877f2);color:#fff;">
