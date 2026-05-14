@@ -694,7 +694,7 @@
     }
 
     function fmt(n) { return '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-    function fmtM(n) { const v = parseFloat(n || 0); return v % 1 === 0 ? v.toString() : v.toString(); }
+   function fmtM(n) { const v = parseFloat(n || 0); return v % 1 === 0 ? v.toString() : v.toFixed(2); }
     function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
 
     /* ── NAVIGATION ── */
@@ -824,149 +824,161 @@
     }
     function openClientById(name) { const c = clientMap[name]; if (c) openClient(c); }
 
-    /* ══════════════════════════════════════════════════════
-       OPEN CLIENT — VERTICAL PAID / UNPAID SECTIONS
-       · Each section has a scrollable body capped at 5 rows
-       · No standalone buttons — bulk bar appears on selection
-    ══════════════════════════════════════════════════════ */
-    function openClient(cOrName) {
-        const name = (typeof cOrName === 'string') ? cOrName : cOrName.name;
-        const c = clientMap[name];
-        if (!c) return;
+  // Replace your entire openClient function with this.
 
-        const txns = dtfData.filter(r => r.name === c.name);
-        const paidTxns   = txns.map(r => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status === 'pd');
-        const unpaidTxns = txns.map(r => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status !== 'pd');
+function openClient(cOrName) {
+    const name = (typeof cOrName === 'string') ? cOrName : cOrName.name;
+    const c = clientMap[name];
+    if (!c) return;
 
-        const paidTotal   = paidTxns.reduce((s, r) => s + r.total, 0);
-        const unpaidTotal = unpaidTxns.reduce((s, r) => s + r.total, 0);
-        const safeName = c.name.replace(/'/g, "\\'");
+    const txns = dtfData.filter(r => r.name === c.name);
+    const paidTxns   = txns.map(r => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status === 'pd');
+    const unpaidTxns = txns.map(r => ({ ...r, _gi: dtfData.indexOf(r) })).filter(r => r.status !== 'pd');
 
-        /* Build a section: header + sticky thead + scrollable tbody */
-        function buildSection(list, type) {
-            const sectionClass = type === 'paid' ? 'paid-section' : 'unpaid-section';
-            const sectionTotal = type === 'paid' ? paidTotal : unpaidTotal;
-            const dotColor     = type === 'paid' ? 'currentColor' : 'currentColor';
-            const emptyMsg     = type === 'paid'
-                ? 'No paid orders yet'
-                : '🎉 No unpaid orders — all settled!';
+    const paidTotal   = paidTxns.reduce((s, r) => s + r.total, 0);
+    const unpaidTotal = unpaidTxns.reduce((s, r) => s + r.total, 0);
+    const safeName = c.name.replace(/'/g, "\\'");
 
-            const allCbId = `cb-all-${type}`;
+    function buildTable(list, type) {
+        const allCbId = `cb-all-${type}`;
+        const emptyMsg = type === 'paid' ? 'No paid orders yet' : '🎉 No unpaid — all settled!';
 
-            const theadHtml = `
-              <table class="txn-tbl" style="width:100%;border-collapse:collapse;">
-                <thead class="txn-tbl-head">
-                  <tr>
-                    <th class="txn-cb" style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">
-                      <input type="checkbox" class="txn-checkbox" id="${allCbId}"
-                        onchange="toggleSelectAll('${type}','${safeName}')" title="Select all">
-                    </th>
-                    <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Date</th>
-                    <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Meters</th>
-                    <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Rate</th>
-                    <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Total</th>
-                    <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;text-align:right;padding-right:10px;">Action</th>
-                  </tr>
-                </thead>
-              </table>`;
-
-            let tbodyHtml = '';
-            if (!list.length) {
-                tbodyHtml = `<div style="padding:14px;font-size:12px;color:var(--muted);font-style:italic;text-align:center;background:var(--bg-secondary);">${emptyMsg}</div>`;
-            } else {
-                const rows = list.map(r => `
-                <tr class="txn-row" data-gi="${r._gi}" data-type="${type}">
-                  <td class="txn-cb"><input type="checkbox" class="txn-checkbox txn-row-cb"
-                    data-gi="${r._gi}" data-type="${type}"
-                    onchange="onRowCheck('${safeName}');syncRowHighlight(this)"></td>
-                  <td style="font-size:11px;color:var(--muted);">${r.date}</td>
-                  <td style="font-weight:700;">${fmtM(r.qty)}m</td>
-                  <td style="color:var(--muted);">₱${r.rate}/m</td>
-                  <td style="font-weight:700;">${fmt(r.total)}</td>
-                  <td style="text-align:right;padding-right:8px;">
-                    <div style="display:flex;gap:5px;justify-content:flex-end;align-items:center;">
-                      <button onclick="toggleTxnByGi('${safeName}',${r._gi})"
-                        title="${r.status === 'pd' ? 'Mark Unpaid' : 'Mark Paid'}"
-                        style="background:${r.status === 'pd' ? 'rgba(255,59,48,0.1)' : 'rgba(52,199,89,0.12)'};border:1px solid ${r.status === 'pd' ? 'rgba(255,59,48,0.25)' : 'rgba(52,199,89,0.3)'};color:${r.status === 'pd' ? 'var(--red)' : 'var(--green)'};border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
-                        <i class="ti ${r.status === 'pd' ? 'ti-x' : 'ti-check'}" style="font-size:13px;"></i>
-                      </button>
-                      <button onclick="confirmDeleteOrderByGi('${safeName}',${r._gi})"
-                        title="Delete order"
-                        style="background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:var(--red);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
-                        <i class="ti ti-trash" style="font-size:13px;"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>`).join('');
-
-                tbodyHtml = `
-                <div class="txn-scroll-body">
-                  <table class="txn-tbl" style="width:100%;border-collapse:collapse;">
-                    <tbody>${rows}</tbody>
-                  </table>
-                </div>`;
-            }
-
-            return `
-            <div class="txn-section ${sectionClass}" style="margin-bottom:12px;">
-              <div class="txn-section-hdr">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block;"></span>
-                  <span>${type === 'paid' ? 'Paid' : 'Unpaid'} Orders</span>
-                  <span style="font-size:10px;opacity:0.7;">(${list.length})</span>
-                </div>
-                <span style="font-weight:900;">${fmt(sectionTotal)}</span>
-              </div>
-              ${list.length ? theadHtml : ''}
-              ${tbodyHtml}
-            </div>`;
+        if (!list.length) {
+            return `<div style="padding:28px 14px;text-align:center;font-size:13px;color:var(--muted);background:var(--bg-secondary);">${emptyMsg}</div>`;
         }
 
-        const html = `
-        <div class="mhdr">
-          <button class="mclose" onclick="closeModal()">← Back</button>
-          <span class="mtitle">${c.name}</span>
-          <span class="badge ${c.unpaid > 0 ? 'unpaid' : 'paid'}">${c.unpaid > 0 ? 'Has Balance' : 'All Paid'}</span>
-        </div>
-        <div class="fsec">
+        const rows = list.map(r => `
+        <tr class="txn-row" data-gi="${r._gi}" data-type="${type}">
+          <td class="txn-cb"><input type="checkbox" class="txn-checkbox txn-row-cb"
+            data-gi="${r._gi}" data-type="${type}"
+            onchange="onRowCheck('${safeName}');syncRowHighlight(this)"></td>
+          <td style="font-size:11px;color:var(--muted);white-space:nowrap;">${r.date}</td>
+          <td style="font-weight:700;">${fmtM(r.qty)}m</td>
+          <td style="color:var(--muted);font-size:11px;">₱${r.rate}/m</td>
+          <td style="font-weight:700;">${fmt(r.total)}</td>
+          <td style="text-align:right;padding-right:8px;">
+            <div style="display:flex;gap:5px;justify-content:flex-end;align-items:center;">
+              <button onclick="toggleTxnByGi('${safeName}',${r._gi})"
+                title="${r.status === 'pd' ? 'Mark Unpaid' : 'Mark Paid'}"
+                style="background:${r.status === 'pd' ? 'rgba(255,59,48,0.1)' : 'rgba(52,199,89,0.12)'};border:1px solid ${r.status === 'pd' ? 'rgba(255,59,48,0.25)' : 'rgba(52,199,89,0.3)'};color:${r.status === 'pd' ? 'var(--red)' : 'var(--green)'};border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                <i class="ti ${r.status === 'pd' ? 'ti-x' : 'ti-check'}" style="font-size:13px;"></i>
+              </button>
+              <button onclick="confirmDeleteOrderByGi('${safeName}',${r._gi})"
+                style="background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.25);color:var(--red);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                <i class="ti ti-trash" style="font-size:13px;"></i>
+              </button>
+            </div>
+          </td>
+        </tr>`).join('');
 
-          <!-- STATS -->
-          <div class="stats-grid" style="margin-bottom:14px;">
-            <div class="scard"><div class="slabel">Total Spent</div><div class="sval" style="font-size:16px;">${fmt(c.total)}</div></div>
-            <div class="scard"><div class="slabel">Total Orders</div><div class="sval" style="font-size:16px;">${txns.length}</div></div>
-          </div>
-
-          <!-- BULK ACTION BAR — appears only when rows are selected -->
-          <div class="bulk-bar" id="bulk-bar">
-            <span class="bulk-label" id="bulk-label">0 selected</span>
-            <button class="bulk-btn bb-receipt" onclick="bulkGenReceipt('${safeName}')">
-              <i class="ti ti-receipt" style="font-size:13px;"></i> Generate Receipt
-            </button>
-            <button class="bulk-btn bb-delete" onclick="bulkDeleteOrders('${safeName}')">
-              <i class="ti ti-trash" style="font-size:13px;"></i> Delete Selected
-            </button>
-            <button class="bulk-btn bb-clear" onclick="clearAllChecks('${safeName}')">
-              <i class="ti ti-x" style="font-size:12px;"></i> Clear
-            </button>
-          </div>
-
-          <!-- UNPAID first (needs attention) -->
-          ${buildSection(unpaidTxns, 'unpaid')}
-
-          <!-- PAID section -->
-          ${buildSection(paidTxns, 'paid')}
-
-          <!-- hint when nothing selected -->
-          <div id="select-hint" style="text-align:center;font-size:11px;color:var(--muted);padding:6px 0 2px;">
-            <i class="ti ti-checkbox" style="font-size:12px;vertical-align:-1px;margin-right:4px;"></i>
-            Tick rows to generate a receipt or delete orders
-          </div>
-
+        return `
+        <table class="txn-tbl" style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th class="txn-cb" style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">
+                <input type="checkbox" class="txn-checkbox" id="${allCbId}"
+                  onchange="toggleSelectAll('${type}','${safeName}')" title="Select all">
+              </th>
+              <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Date</th>
+              <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Meters</th>
+              <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Rate</th>
+              <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;">Total</th>
+              <th style="background:var(--bg-secondary);position:sticky;top:0;z-index:2;text-align:right;padding-right:10px;">Action</th>
+            </tr>
+          </thead>
+        </table>
+        <div style="max-height:calc(5 * 46px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;">
+          <table class="txn-tbl" style="width:100%;border-collapse:collapse;">
+            <tbody>${rows}</tbody>
+          </table>
         </div>`;
-
-        openModal(html);
     }
 
+    const html = `
+    <div class="mhdr">
+      <button class="mclose" onclick="closeModal()">← Back</button>
+      <span class="mtitle">${c.name}</span>
+      <span class="badge ${c.unpaid > 0 ? 'unpaid' : 'paid'}">${c.unpaid > 0 ? 'Has Balance' : 'All Paid'}</span>
+    </div>
+    <div class="fsec">
+
+      <div class="stats-grid" style="margin-bottom:14px;">
+        <div class="scard"><div class="slabel">Total Spent</div><div class="sval" style="font-size:16px;">${fmt(c.total)}</div></div>
+        <div class="scard"><div class="slabel">Total Orders</div><div class="sval" style="font-size:16px;">${txns.length}</div></div>
+      </div>
+
+      <div class="bulk-bar" id="bulk-bar">
+        <span class="bulk-label" id="bulk-label">0 selected</span>
+        <button class="bulk-btn bb-receipt" onclick="bulkGenReceipt('${safeName}')">
+          <i class="ti ti-receipt" style="font-size:13px;"></i> Generate Receipt
+        </button>
+        <button class="bulk-btn bb-delete" onclick="bulkDeleteOrders('${safeName}')">
+          <i class="ti ti-trash" style="font-size:13px;"></i> Delete Selected
+        </button>
+        <button class="bulk-btn bb-clear" onclick="clearAllChecks('${safeName}')">
+          <i class="ti ti-x" style="font-size:12px;"></i> Clear
+        </button>
+      </div>
+
+      <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;">
+        <button id="tab-btn-unpaid"
+          onclick="switchClientTab('unpaid')"
+          style="flex:1;padding:10px 14px;border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s,color 0.15s;background:rgba(255,59,48,0.08);color:#a32d2d;border-right:1px solid var(--border);">
+          <span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;"></span>
+          Unpaid
+          <span style="background:rgba(255,59,48,0.15);color:#a32d2d;border-radius:99px;padding:1px 8px;font-size:11px;">${unpaidTxns.length}</span>
+          <span style="margin-left:4px;font-size:11px;opacity:0.8;">${fmt(unpaidTotal)}</span>
+        </button>
+        <button id="tab-btn-paid"
+          onclick="switchClientTab('paid')"
+          style="flex:1;padding:10px 14px;border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s,color 0.15s;background:var(--bg-secondary);color:var(--muted);">
+          <span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;"></span>
+          Paid
+          <span style="background:var(--border);color:var(--muted);border-radius:99px;padding:1px 8px;font-size:11px;">${paidTxns.length}</span>
+          <span style="margin-left:4px;font-size:11px;opacity:0.8;">${fmt(paidTotal)}</span>
+        </button>
+      </div>
+
+      <div id="tab-panel-unpaid" style="border-radius:10px;overflow:hidden;border:1px solid rgba(255,59,48,0.2);">
+        ${buildTable(unpaidTxns, 'unpaid')}
+      </div>
+      <div id="tab-panel-paid" style="display:none;border-radius:10px;overflow:hidden;border:1px solid rgba(52,199,89,0.2);">
+        ${buildTable(paidTxns, 'paid')}
+      </div>
+
+      <div id="select-hint" style="text-align:center;font-size:11px;color:var(--muted);padding:10px 0 2px;">
+        <i class="ti ti-checkbox" style="font-size:12px;vertical-align:-1px;margin-right:4px;"></i>
+        Tick rows to generate a receipt or delete orders
+      </div>
+    </div>`;
+
+    openModal(html);
+}
+
+// Add this function alongside openClient (outside it, in your main script block)
+function switchClientTab(tab) {
+    const unpaidPanel = document.getElementById('tab-panel-unpaid');
+    const paidPanel   = document.getElementById('tab-panel-paid');
+    const unpaidBtn   = document.getElementById('tab-btn-unpaid');
+    const paidBtn     = document.getElementById('tab-btn-paid');
+    if (!unpaidPanel || !paidPanel) return;
+
+    if (tab === 'unpaid') {
+        unpaidPanel.style.display = 'block';
+        paidPanel.style.display   = 'none';
+        unpaidBtn.style.background = 'rgba(255,59,48,0.08)';
+        unpaidBtn.style.color      = '#a32d2d';
+        paidBtn.style.background   = 'var(--bg-secondary)';
+        paidBtn.style.color        = 'var(--muted)';
+    } else {
+        paidPanel.style.display   = 'block';
+        unpaidPanel.style.display = 'none';
+        paidBtn.style.background   = 'rgba(52,199,89,0.09)';
+        paidBtn.style.color        = '#2a9a45';
+        unpaidBtn.style.background = 'var(--bg-secondary)';
+        unpaidBtn.style.color      = 'var(--muted)';
+    }
+}
     /* Highlight checked row */
     function syncRowHighlight(cb) {
         const row = cb.closest('tr');
