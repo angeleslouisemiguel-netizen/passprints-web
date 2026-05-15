@@ -467,6 +467,60 @@ def api_me():
     return jsonify({"email": user["email"], "name": user["name"],
                     "picture": user.get("picture", ""), "admin": admin})
 
+@app.route("/api/scan-receipt", methods=["POST"])
+@login_required
+def scan_receipt():
+    """Use GPT-4o Vision to extract expense details from a scanned receipt image."""
+    try:
+        body = request.get_json()
+        image_b64 = body.get("image", "")
+        if not image_b64:
+            return jsonify({"error": "No image provided"}), 400
+
+        today = __import__('datetime').date.today().isoformat()
+        prompt = f"""You are an expense extraction assistant. Look at this receipt or expense document image and extract the following details. Respond ONLY with a valid JSON object, no extra text or markdown.
+
+Return this exact JSON structure:
+{{
+  "vendor": "store or vendor name",
+  "date": "YYYY-MM-DD format, use {today} if unclear",
+  "amount": 0.00,
+  "category": "one of: supplies, utilities, equipment, transport, food, other",
+  "notes": "brief description of what was purchased, or empty string"
+}}
+
+Rules:
+- amount must be a number (no currency symbols)
+- date must be YYYY-MM-DD
+- category must be exactly one of the listed values
+- if you cannot read something clearly, make your best guess"""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=300,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}", "detail": "high"}}
+                ]
+            }]
+        )
+
+        raw = response.choices[0].message.content.strip()
+        # Strip markdown fences if present
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        import json as _json
+        data = _json.loads(raw.strip())
+        return jsonify(data)
+
+    except Exception as e:
+        print(f"scan-receipt error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # ── Meta Messenger API ────────────────────────────────────────
 # Store your Page Access Token in environment variable: META_PAGE_ACCESS_TOKEN
 META_PAGE_ACCESS_TOKEN = os.environ.get("META_PAGE_ACCESS_TOKEN", "")
