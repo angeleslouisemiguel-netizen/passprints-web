@@ -467,6 +467,94 @@ def api_me():
     return jsonify({"email": user["email"], "name": user["name"],
                     "picture": user.get("picture", ""), "admin": admin})
 
+# ── Meta Messenger API ────────────────────────────────────────
+# Store your Page Access Token in environment variable: META_PAGE_ACCESS_TOKEN
+META_PAGE_ACCESS_TOKEN = os.environ.get("META_PAGE_ACCESS_TOKEN", "")
+META_API_VERSION = "v19.0"
+
+@app.route("/api/messenger/conversations")
+@login_required
+def get_messenger_conversations():
+    """Fetch recent Messenger conversations from your Facebook Page."""
+    if not META_PAGE_ACCESS_TOKEN:
+        return jsonify({"error": "META_PAGE_ACCESS_TOKEN not configured"}), 500
+    try:
+        url = f"https://graph.facebook.com/{META_API_VERSION}/me/conversations"
+        params = {
+            "fields": "participants,updated_time,id",
+            "access_token": META_PAGE_ACCESS_TOKEN,
+            "limit": 30,
+            "platform": "messenger"
+        }
+        resp = requests.get(url, params=params, timeout=10)
+        data = resp.json()
+        if "error" in data:
+            return jsonify({"error": data["error"].get("message", "Meta API error")}), 400
+
+        conversations = []
+        for conv in data.get("data", []):
+            participants = conv.get("participants", {}).get("data", [])
+            # Filter out the page itself — get the customer participant
+            customer = next(
+                (p for p in participants if p.get("id") != _get_page_id()),
+                None
+            )
+            if customer:
+                conversations.append({
+                    "conv_id": conv["id"],
+                    "psid": customer["id"],
+                    "name": customer.get("name", "Unknown"),
+                    "updated_time": conv.get("updated_time", "")
+                })
+        return jsonify({"conversations": conversations})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def _get_page_id():
+    """Get the Page ID for the current access token."""
+    try:
+        resp = requests.get(
+            f"https://graph.facebook.com/{META_API_VERSION}/me",
+            params={"access_token": META_PAGE_ACCESS_TOKEN, "fields": "id"},
+            timeout=5
+        )
+        return resp.json().get("id", "")
+    except Exception:
+        return ""
+
+@app.route("/api/messenger/send", methods=["POST"])
+@login_required
+def send_messenger_message():
+    """Send a receipt message to a specific Messenger conversation."""
+    if not META_PAGE_ACCESS_TOKEN:
+        return jsonify({"error": "META_PAGE_ACCESS_TOKEN not configured"}), 500
+    try:
+        body = request.get_json()
+        psid = body.get("psid")
+        message = body.get("message", "")
+        if not psid or not message:
+            return jsonify({"error": "Missing psid or message"}), 400
+
+        url = f"https://graph.facebook.com/{META_API_VERSION}/me/messages"
+        payload = {
+            "recipient": {"id": psid},
+            "message": {"text": message},
+            "messaging_type": "MESSAGE_TAG",
+            "tag": "CONFIRMED_EVENT_UPDATE"
+        }
+        resp = requests.post(
+            url,
+            params={"access_token": META_PAGE_ACCESS_TOKEN},
+            json=payload,
+            timeout=10
+        )
+        data = resp.json()
+        if "error" in data:
+            return jsonify({"error": data["error"].get("message", "Send failed")}), 400
+        return jsonify({"success": True, "message_id": data.get("message_id", "")})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)
