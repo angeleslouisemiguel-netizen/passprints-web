@@ -301,6 +301,7 @@
         .animate-card { animation: fadeUp 480ms cubic-bezier(.2,.9,.2,1) both; }
         @keyframes btnPop { 0% { transform: scale(1); } 40% { transform: scale(0.94); } 70% { transform: scale(1.04); } 100% { transform: scale(1); } }
         @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .btn, .ibtn, .nav-btn, .tone-btn { position: relative; overflow: hidden; }
         .btn:active, .ibtn:active { animation: btnPop 0.28s cubic-bezier(.36,.07,.19,.97) both; }
         .ripple-effect { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple 0.5s linear; background: rgba(255,255,255,0.3); pointer-events: none; width: 60px; height: 60px; margin-top: -30px; margin-left: -30px; }
@@ -1327,44 +1328,96 @@ function switchClientTab(tab) {
         openModal(`
         <div class="mhdr" style="background:linear-gradient(135deg,#0866FF,#1877f2);color:#fff;">
           <button class="mclose" onclick="closeModal()" style="color:#fff;opacity:0.85;">← Back</button>
-          <span class="mtitle" style="color:#fff;"><i class="ti ti-brand-meta" style="font-size:15px;margin-right:5px;"></i> Send via Meta Business Suite</span>
+          <span class="mtitle" style="color:#fff;"><i class="ti ti-brand-messenger" style="font-size:15px;margin-right:5px;"></i> Send via Messenger</span>
           <span></span>
         </div>
         <div class="fsec">
           <div style="background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:8px;">Message Preview</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:8px;">Receipt Preview</div>
             <pre style="font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-word;font-family:var(--font);margin:0;line-height:1.6;">${metaMsg}</pre>
           </div>
-          <button class="ibtn" style="background:var(--bg-secondary);border:1px solid var(--border);color:var(--text);font-size:13px;padding:9px;margin-bottom:10px;" onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)}).then(()=>toast('✅ Message copied!'))"><i class="ti ti-copy"></i> Copy Message</button>
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px;">Open Inbox & Choose Conversation</div>
-          <div style="display:grid;gap:8px;">
-            <a href="https://business.facebook.com/latest/inbox/all" target="_blank" rel="noopener"
-              onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)});toast('✅ Copied! Paste in your Meta inbox.');"
-              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0866FF;border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;">
-              <span style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="ti ti-brand-messenger"></i></span>
-              <div><div>Messenger Inbox</div><div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com</div></div>
-              <i class="ti ti-external-link" style="margin-left:auto;opacity:0.7;"></i>
-            </a>
-            <a href="https://business.facebook.com/latest/inbox/instagram_all" target="_blank" rel="noopener"
-              onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)});toast('✅ Copied! Paste in your Instagram inbox.');"
-              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#E1306C,#833AB4,#F77737);border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;">
-              <span style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="ti ti-brand-instagram"></i></span>
-              <div><div>Instagram Inbox</div><div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com</div></div>
-              <i class="ti ti-external-link" style="margin-left:auto;opacity:0.7;"></i>
-            </a>
-            <a href="https://business.facebook.com/latest/inbox/whatsapp_all" target="_blank" rel="noopener"
-              onclick="navigator.clipboard.writeText(${JSON.stringify(metaMsg)});toast('✅ Copied! Paste in your WhatsApp inbox.');"
-              style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#25D366;border-radius:10px;text-decoration:none;color:#fff;font-weight:600;font-size:13px;">
-              <span style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="ti ti-brand-whatsapp"></i></span>
-              <div><div>WhatsApp Business Inbox</div><div style="font-size:11px;opacity:0.8;font-weight:400;margin-top:1px;">business.facebook.com</div></div>
-              <i class="ti ti-external-link" style="margin-left:auto;opacity:0.7;"></i>
-            </a>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:8px;">Choose Recipient</div>
+          <div id="messengerContactList" style="display:grid;gap:6px;max-height:260px;overflow-y:auto;">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">
+              <i class="ti ti-loader" style="font-size:20px;animation:spin 1s linear infinite;display:block;margin-bottom:6px;"></i>
+              Loading conversations...
+            </div>
           </div>
+          <div id="messengerSendStatus" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;font-size:12px;"></div>
           <div style="margin-top:12px;padding:10px 12px;background:rgba(8,102,255,0.07);border:1px solid rgba(8,102,255,0.2);border-radius:8px;font-size:11px;color:var(--muted);display:flex;align-items:flex-start;gap:6px;">
             <i class="ti ti-info-circle" style="font-size:13px;color:#0866FF;flex-shrink:0;margin-top:1px;"></i>
-            <span>The receipt message is auto-copied to your clipboard. Click any inbox above, find your customer's conversation, and paste to send.</span>
+            <span>Only people who have previously messaged your Facebook Page will appear here.</span>
           </div>
         </div>`);
+
+        // Fetch conversations from backend
+        fetch('/api/messenger/conversations')
+          .then(r => r.json())
+          .then(data => {
+            const list = document.getElementById('messengerContactList');
+            if (!list) return;
+            if (data.error) {
+              list.innerHTML = `<div style="padding:14px;background:rgba(255,59,48,0.08);border:1px solid rgba(255,59,48,0.2);border-radius:8px;font-size:12px;color:#FF3B30;display:flex;align-items:center;gap:8px;"><i class="ti ti-alert-circle"></i>${data.error}</div>`;
+              return;
+            }
+            const convs = data.conversations || [];
+            if (convs.length === 0) {
+              list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;"><i class="ti ti-message-off" style="font-size:24px;display:block;margin-bottom:8px;"></i>No conversations found.<br>Ask your customers to message your Facebook Page first.</div>`;
+              return;
+            }
+            list.innerHTML = convs.map(c => `
+              <button onclick="sendToMessenger('${c.psid}', ${JSON.stringify(metaMsg).replace(/'/g,"\\'")})"
+                style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;text-align:left;cursor:pointer;width:100%;transition:background 0.15s;">
+                <span style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0866FF,#1877f2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:800;color:#fff;">${c.name.charAt(0).toUpperCase()}</span>
+                <span style="font-size:13px;font-weight:600;color:var(--text);flex:1;">${c.name}</span>
+                <i class="ti ti-send" style="color:#0866FF;font-size:16px;"></i>
+              </button>`).join('');
+          })
+          .catch(err => {
+            const list = document.getElementById('messengerContactList');
+            if (list) list.innerHTML = `<div style="padding:14px;background:rgba(255,59,48,0.08);border:1px solid rgba(255,59,48,0.2);border-radius:8px;font-size:12px;color:#FF3B30;">Failed to load conversations. Check your internet connection.</div>`;
+          });
+    }
+
+    function sendToMessenger(psid, message) {
+        const status = document.getElementById('messengerSendStatus');
+        if (status) {
+          status.style.display = 'block';
+          status.style.background = 'rgba(8,102,255,0.07)';
+          status.style.border = '1px solid rgba(8,102,255,0.2)';
+          status.style.color = 'var(--muted)';
+          status.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite;"></i> Sending...';
+        }
+        fetch('/api/messenger/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ psid, message })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (status) {
+            if (data.success) {
+              status.style.background = 'rgba(52,199,89,0.1)';
+              status.style.border = '1px solid rgba(52,199,89,0.3)';
+              status.style.color = '#34C759';
+              status.innerHTML = '<i class="ti ti-circle-check"></i> Receipt sent successfully via Messenger!';
+              toast('✅ Receipt sent via Messenger!');
+            } else {
+              status.style.background = 'rgba(255,59,48,0.08)';
+              status.style.border = '1px solid rgba(255,59,48,0.2)';
+              status.style.color = '#FF3B30';
+              status.innerHTML = '<i class="ti ti-alert-circle"></i> ' + (data.error || 'Failed to send');
+            }
+          }
+        })
+        .catch(() => {
+          if (status) {
+            status.style.background = 'rgba(255,59,48,0.08)';
+            status.style.border = '1px solid rgba(255,59,48,0.2)';
+            status.style.color = '#FF3B30';
+            status.innerHTML = '<i class="ti ti-alert-circle"></i> Network error. Try again.';
+          }
+        });
     }
 
     /* ── CLEAR ALL DATA ── */
